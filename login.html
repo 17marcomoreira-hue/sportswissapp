@@ -8,63 +8,136 @@
   <meta name="theme-color" content="#0b1220">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
   <style>
-    :root{--bg:#0b1220;--card:rgba(255,255,255,.92);--text:#0b1220;}
+    :root{--bg:#0b1220;--card:rgba(255,255,255,.92);--text:#0b1220;--muted:rgba(11,18,32,.70)}
     body{margin:0;min-height:100vh;display:grid;place-items:center;
-      background:radial-gradient(900px 700px at 15% 0%, rgba(37,99,235,.18), transparent 55%),
-               radial-gradient(900px 700px at 100% 15%, rgba(34,197,94,.12), transparent 55%),
-               radial-gradient(900px 700px at 55% 110%, rgba(236,72,153,.10), transparent 60%),
-               var(--bg);
+      background:
+        radial-gradient(900px 700px at 15% 0%, rgba(37,99,235,.18), transparent 55%),
+        radial-gradient(900px 700px at 100% 15%, rgba(34,197,94,.12), transparent 55%),
+        radial-gradient(900px 700px at 55% 110%, rgba(236,72,153,.10), transparent 60%),
+        var(--bg);
       font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#fff;}
-    .card{width:min(520px,92vw);background:var(--card);color:var(--text);border:1px solid rgba(11,18,32,.14);
+    .wrap{width:min(980px,94vw);display:grid;gap:14px;grid-template-columns: 1.05fr .95fr;align-items:start}
+    @media (max-width: 880px){ .wrap{grid-template-columns:1fr} }
+    .card{background:var(--card);color:var(--text);border:1px solid rgba(11,18,32,.14);
       border-radius:18px;box-shadow:0 18px 40px rgba(0,0,0,.35);padding:16px;}
-    h1{margin:4px 0 10px;font-size:1.35rem;}
-    .muted{color:rgba(11,18,32,.70);font-size:.92rem;line-height:1.35}
-    label{display:block;margin:10px 0 6px;color:rgba(11,18,32,.70);font-size:.9rem}
+    h1{margin:4px 0 6px;font-size:1.35rem;}
+    .muted{color:var(--muted);font-size:.92rem;line-height:1.35}
+    label{display:block;margin:10px 0 6px;color:var(--muted);font-size:.9rem}
     input{width:100%;padding:12px 12px;border-radius:12px;border:1px solid rgba(11,18,32,.18);font-size:16px;outline:none;}
     input:focus{box-shadow:0 0 0 4px rgba(37,99,235,.18);border-color:rgba(37,99,235,.35)}
     .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px}
-    button{cursor:pointer;border:0;border-radius:12px;padding:11px 14px;font-weight:800}
+    button{cursor:pointer;border:0;border-radius:12px;padding:11px 14px;font-weight:900}
     .btn{background:linear-gradient(135deg,#2563eb,#7c3aed);color:#fff;flex:1}
     .btn2{background:#fff;border:1px solid rgba(11,18,32,.18);color:#111827}
-    .link{background:transparent;border:0;color:#2563eb;font-weight:800;padding:0}
+    .btn:disabled,.btn2:disabled{opacity:.55;cursor:not-allowed}
+    .link{background:transparent;border:0;color:#2563eb;font-weight:900;padding:0}
     .msg{margin-top:10px;border-radius:12px;padding:10px 12px;display:none}
     .msg.ok{display:block;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.25)}
     .msg.err{display:block;background:rgba(239,68,68,.10);border:1px solid rgba(239,68,68,.25)}
     .top{display:flex;gap:12px;align-items:center}
     .logo{width:54px;height:54px;border-radius:16px;background:linear-gradient(135deg,#4f46e5,#10b981);display:grid;place-items:center;overflow:hidden}
     .logo img{width:42px;height:42px;object-fit:contain}
+    .tabs{display:flex;gap:8px;margin-top:12px}
+    .tab{flex:1;border-radius:12px;border:1px solid rgba(11,18,32,.14);padding:10px 12px;background:rgba(255,255,255,.65);
+      font-weight:900;color:#111827}
+    .tab.active{background:#fff;box-shadow:0 10px 24px rgba(0,0,0,.10)}
+    .panel{display:none;margin-top:10px}
+    .panel.active{display:block}
+    .pill{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;
+      background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.25);color:#0f5132;font-weight:900;font-size:.9rem}
+    .features{display:grid;gap:10px;margin-top:12px}
+    .feat{background:rgba(255,255,255,.72);border:1px solid rgba(11,18,32,.12);border-radius:16px;padding:12px}
+    .feat b{display:block;margin-bottom:4px}
+    .hero h2{margin:6px 0 6px;font-size:1.2rem;color:#fff}
+    .hero p{margin:0;color:rgba(255,255,255,.82);line-height:1.45}
+    .heroCard{background:rgba(17,24,39,.70);border:1px solid rgba(255,255,255,.14);border-radius:18px;padding:16px;
+      box-shadow:0 18px 40px rgba(0,0,0,.35)}
+    .badge{display:inline-flex;align-items:center;gap:8px;padding:7px 10px;border-radius:999px;
+      background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.16);font-weight:900}
     .footer{margin-top:12px;color:rgba(11,18,32,.58);font-size:.85rem;text-align:center}
+    .hint{margin-top:8px;font-size:.85rem;color:rgba(11,18,32,.62)}
   </style>
 </head>
 <body>
-  <div class="card">
-    <div class="top">
-      <div class="logo"><img src="icons/icon-192.png" alt=""></div>
-      <div>
-        <h1>Tournoi — Connexion</h1>
-        <div class="muted">Connecte-toi pour démarrer l’essai gratuit (10 minutes) ou utiliser ta licence.</div>
+  <div class="wrap">
+    <!-- Présentation / “pub” -->
+    <div class="heroCard hero">
+      <div class="badge">🏆 Gestion de tournois — simple, rapide, pro</div>
+      <h2>Crée ton tournoi en quelques minutes</h2>
+      <p>
+        Planifie les matchs, saisis les scores, exporte des documents, et garde une sauvegarde de tes tournois.
+        Parfait pour écoles, clubs et événements.
+      </p>
+
+      <div style="margin-top:12px" class="pill">🎁 Essai gratuit : <span>10 minutes</span> dès la création du compte</div>
+
+      <div class="features">
+        <div class="feat"><b>📅 Organisation claire</b><span class="muted">Calendrier, terrains, rounds et suivi des résultats.</span></div>
+        <div class="feat"><b>📊 Classement automatique</b><span class="muted">Visualisation simple et lisible des performances.</span></div>
+        <div class="feat"><b>💾 Sauvegarde</b><span class="muted">Export local + snapshot cloud (selon connexion).</span></div>
+      </div>
+
+      <div style="margin-top:12px" class="muted">
+        Astuce : l’offline est possible si la licence a été validée récemment.
       </div>
     </div>
 
-    <div class="msg" id="msg"></div>
+    <!-- Login / Signup -->
+    <div class="card">
+      <div class="top">
+        <div class="logo"><img src="icons/icon-192.png" alt=""></div>
+        <div>
+          <h1>Connexion</h1>
+          <div class="muted">Accède à l’essai gratuit, ou active ta licence.</div>
+        </div>
+      </div>
 
-    <label>Email</label>
-    <input id="email" type="email" autocomplete="email" placeholder="ex: prenom.nom@email.com"/>
+      <div class="msg" id="msg"></div>
 
-    <label>Mot de passe</label>
-    <input id="password" type="password" autocomplete="current-password" placeholder="••••••••"/>
+      <div class="tabs" role="tablist" aria-label="Connexion ou création de compte">
+        <button class="tab active" id="tabLogin" type="button">Se connecter</button>
+        <button class="tab" id="tabSignup" type="button">Créer un compte</button>
+      </div>
 
-    <div class="row">
-      <button class="btn" id="btnLogin">Se connecter</button>
-      <button class="btn2" id="btnSignup">Créer un compte</button>
+      <!-- Panel login -->
+      <div class="panel active" id="panelLogin">
+        <label>Email</label>
+        <input id="emailLogin" type="email" autocomplete="email" placeholder="ex: prenom.nom@email.com"/>
+
+        <label>Mot de passe</label>
+        <input id="passwordLogin" type="password" autocomplete="current-password" placeholder="••••••••"/>
+
+        <div class="row">
+          <button class="btn" id="btnLogin" disabled>Se connecter</button>
+        </div>
+
+        <div class="row" style="justify-content:space-between">
+          <button class="link" id="btnReset" type="button">Mot de passe perdu</button>
+        </div>
+
+        <div class="hint">Après clic, vérifie aussi les <b>spams / indésirables</b> si tu ne vois pas l’email.</div>
+      </div>
+
+      <!-- Panel signup -->
+      <div class="panel" id="panelSignup">
+        <label>Email</label>
+        <input id="emailSignup" type="email" autocomplete="email" placeholder="ex: prenom.nom@email.com"/>
+
+        <label>Mot de passe</label>
+        <input id="passwordSignup" type="password" autocomplete="new-password" placeholder="6 caractères minimum"/>
+
+        <label>Confirmer le mot de passe</label>
+        <input id="passwordSignup2" type="password" autocomplete="new-password" placeholder="Répète le mot de passe"/>
+
+        <div class="row">
+          <button class="btn2" id="btnSignup" disabled>Créer un compte</button>
+        </div>
+
+        <div class="hint">L’essai gratuit démarre juste après la création du compte (10 minutes).</div>
+      </div>
+
+      <div class="footer">Développé par <b>Marco Moreira-Perriard</b></div>
     </div>
-
-    <div class="row" style="justify-content:space-between">
-      <button class="link" id="btnReset">Mot de passe perdu</button>
-      <a class="link" href="./tuto_installation_tournoi.html" style="text-decoration:none">Installer l’app</a>
-    </div>
-
-    <div class="footer">Développé par <b>Marco Moreira‑Perriard</b></div>
   </div>
 
   <script type="module">
@@ -74,10 +147,55 @@
     const $ = (id)=>document.getElementById(id);
     const msg = $("msg");
 
+    const tabLogin = $("tabLogin");
+    const tabSignup = $("tabSignup");
+    const panelLogin = $("panelLogin");
+    const panelSignup = $("panelSignup");
+
+    const emailLogin = $("emailLogin");
+    const passwordLogin = $("passwordLogin");
+    const btnLogin = $("btnLogin");
+
+    const emailSignup = $("emailSignup");
+    const passwordSignup = $("passwordSignup");
+    const passwordSignup2 = $("passwordSignup2");
+    const btnSignup = $("btnSignup");
+
     function show(type, text){
       msg.className = "msg " + (type==="ok" ? "ok" : "err");
       msg.textContent = text;
+      msg.style.display = "block";
     }
+    function clearMsg(){ msg.style.display = "none"; }
+
+    function setTab(mode){
+      clearMsg();
+      const isLogin = mode === "login";
+      tabLogin.classList.toggle("active", isLogin);
+      tabSignup.classList.toggle("active", !isLogin);
+      panelLogin.classList.toggle("active", isLogin);
+      panelSignup.classList.toggle("active", !isLogin);
+    }
+    tabLogin.onclick = ()=>setTab("login");
+    tabSignup.onclick = ()=>setTab("signup");
+
+    function canLogin(){
+      return emailLogin.value.trim().includes("@") && passwordLogin.value.length >= 1;
+    }
+    function canSignup(){
+      const e = emailSignup.value.trim();
+      const p1 = passwordSignup.value;
+      const p2 = passwordSignup2.value;
+      return e.includes("@") && p1.length >= 6 && p1 === p2;
+    }
+    function refreshButtons(){
+      btnLogin.disabled = !canLogin();
+      btnSignup.disabled = !canSignup();
+    }
+    [emailLogin,passwordLogin,emailSignup,passwordSignup,passwordSignup2].forEach(el=>{
+      el.addEventListener("input", refreshButtons);
+    });
+    refreshButtons();
 
     async function afterAuth(user){
       if(!navigator.onLine){
@@ -90,11 +208,11 @@
       location.href = access.allowed ? "./app.html" : "./activate.html";
     }
 
-    $("btnLogin").onclick = async ()=>{
-      msg.style.display="none";
+    btnLogin.onclick = async ()=>{
+      clearMsg();
       try{
-        const email=$("email").value.trim();
-        const pass=$("password").value;
+        const email = emailLogin.value.trim();
+        const pass = passwordLogin.value;
         const user = await login(email, pass);
         await afterAuth(user);
       }catch(e){
@@ -102,13 +220,15 @@
       }
     };
 
-    $("btnSignup").onclick = async ()=>{
-      msg.style.display="none";
+    btnSignup.onclick = async ()=>{
+      clearMsg();
       try{
-        const email=$("email").value.trim();
-        const pass=$("password").value;
-        if(pass.length < 6) throw new Error("Mot de passe: 6 caractères minimum");
-        const user = await signup(email, pass);
+        const email = emailSignup.value.trim();
+        const p1 = passwordSignup.value;
+        const p2 = passwordSignup2.value;
+        if(p1.length < 6) throw new Error("Mot de passe : 6 caractères minimum");
+        if(p1 !== p2) throw new Error("Les mots de passe ne correspondent pas.");
+        const user = await signup(email, p1);
         await afterAuth(user);
       }catch(e){
         show("err", e?.message || "Erreur de création de compte");
@@ -116,12 +236,12 @@
     };
 
     $("btnReset").onclick = async ()=>{
-      msg.style.display="none";
+      clearMsg();
       try{
-        const email=$("email").value.trim();
-        if(!email) throw new Error("Entre ton email d’abord.");
+        const email = emailLogin.value.trim();
+        if(!email) throw new Error("Entre ton email d’abord (onglet Se connecter).");
         await resetPassword(email);
-        show("ok", "Email de réinitialisation envoyé. Vérifie ta boîte mail.");
+        show("ok", "Email de réinitialisation envoyé. Vérifie ta boîte mail et aussi les spams/indésirables.");
       }catch(e){
         show("err", e?.message || "Impossible d'envoyer l'email");
       }
@@ -129,3 +249,4 @@
   </script>
 </body>
 </html>
+
