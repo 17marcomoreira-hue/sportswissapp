@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Tournoi — Admin clés</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#0b1220">
+  <style>
+    :root{--bg:#0b1220;--card:rgba(255,255,255,.92);--text:#0b1220;}
+    body{margin:0;min-height:100vh;display:grid;place-items:center;background:var(--bg);
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#fff;}
+    .card{width:min(860px,94vw);background:var(--card);color:var(--text);border-radius:18px;box-shadow:0 18px 40px rgba(0,0,0,.35);padding:16px;}
+    h1{margin:0 0 10px;font-size:1.3rem}
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    input{padding:10px 12px;border-radius:12px;border:1px solid rgba(11,18,32,.18);font-size:16px}
+    button{cursor:pointer;border:0;border-radius:12px;padding:10px 14px;font-weight:800;background:linear-gradient(135deg,#2563eb,#7c3aed);color:#fff}
+    button.secondary{background:#fff;color:#111827;border:1px solid rgba(11,18,32,.18)}
+    table{width:100%;border-collapse:collapse;margin-top:12px}
+    th,td{border-bottom:1px solid rgba(11,18,32,.12);padding:10px;text-align:left;font-size:.95rem}
+    th{background:rgba(37,99,235,.08)}
+    .pill{display:inline-block;padding:3px 8px;border-radius:999px;font-size:.8rem;border:1px solid rgba(11,18,32,.16)}
+    .ok{background:rgba(34,197,94,.12);border-color:rgba(34,197,94,.25)}
+    .bad{background:rgba(239,68,68,.10);border-color:rgba(239,68,68,.25)}
+    .muted{color:rgba(11,18,32,.70);font-size:.9rem}
+    a{color:#2563eb;text-decoration:none;font-weight:800}
+    .msg{margin-top:10px;border-radius:12px;padding:10px 12px;display:none}
+    .msg.ok{display:block;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.25)}
+    .msg.err{display:block;background:rgba(239,68,68,.10);border:1px solid rgba(239,68,68,.25)}
+    textarea{width:100%;min-height:90px;border-radius:12px;border:1px solid rgba(11,18,32,.18);padding:10px;font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="row" style="justify-content:space-between">
+      <h1>Admin — clés d’activation</h1>
+      <a href="./app.html">→ Aller à l’app</a>
+    </div>
+    <div class="muted">Accès uniquement si ton email est dans <code>js/firebase-config.js</code>.</div>
+
+    <div class="msg" id="msg"></div>
+
+    <div class="row" style="margin-top:12px">
+      <input id="qty" type="number" min="1" max="200" value="10" style="width:110px" />
+      <button id="btnGen">Générer des clés</button>
+      <button id="btnRefresh" class="secondary">Rafraîchir</button>
+      <button id="btnLogout" class="secondary">Déconnexion</button>
+    </div>
+
+    <div style="margin-top:10px">
+      <div class="muted">Clés générées :</div>
+      <textarea id="out" readonly></textarea>
+    </div>
+
+    <table>
+      <thead><tr><th>Clé</th><th>Statut</th><th>Utilisée par</th><th>Expiration</th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+
+  <script type="module">
+    import { waitForAuthReady, logout } from "./js/auth.js";
+    import { db, fns } from "./js/db.js";
+    import { ADMIN_EMAILS } from "./js/firebase-config.js";
+
+    const { collection, addDoc, getDocs } = fns;
+
+    const $ = (id)=>document.getElementById(id);
+    const msg = $("msg");
+
+    function show(type, text){
+      msg.className = "msg " + (type==="ok" ? "ok" : "err");
+      msg.textContent = text;
+    }
+
+    function makeKey(){
+      const chunk = ()=>Math.random().toString(36).toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,4).padEnd(4,'X');
+      return chunk()+"-"+chunk()+"-"+chunk();
+    }
+
+    async function requireAdmin(){
+      const user = await waitForAuthReady();
+      if(!user){ location.href="./login.html"; return null; }
+      if(!navigator.onLine){ show("err","Internet requis pour l’admin."); return null; }
+      const email = (user.email||"").toLowerCase();
+      const ok = (ADMIN_EMAILS||[]).map(x=>String(x).toLowerCase()).includes(email);
+      if(!ok){
+        show("err", "Accès refusé (pas admin).");
+        setTimeout(()=>location.href="./app.html", 800);
+        return null;
+      }
+      return user;
+    }
+
+    async function refresh(){
+      const user = await requireAdmin();
+      if(!user) return;
+
+      const snap = await getDocs(collection(db, "licenseKeys"));
+      const all = [];
+      snap.forEach(d => all.push({ id:d.id, ...d.data() }));
+      all.sort((a,b)=>(b.createdAtMs||0)-(a.createdAtMs||0));
+
+      $("rows").innerHTML = all.map(k=>{
+        const used = !!k.usedBy;
+        const exp = k.expiresAt ? new Date(k.expiresAt).toLocaleDateString() : "—";
+        return `
+          <tr>
+            <td><code>${k.key||""}</code></td>
+            <td><span class="pill ${used?'bad':'ok'}">${used?'utilisée':'disponible'}</span></td>
+            <td>${used ? (k.usedEmail||k.usedBy) : "—"}</td>
+            <td>${used ? exp : "—"}</td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    $("btnGen").onclick = async ()=>{
+      msg.style.display="none";
+      const user = await requireAdmin();
+      if(!user) return;
+
+      try{
+        const qty = Math.max(1, Math.min(200, Math.trunc(Number($("qty").value)||10)));
+        const keys = [];
+        for(let i=0;i<qty;i++){
+          const key = makeKey();
+          keys.push(key);
+          await addDoc(collection(db, "licenseKeys"), {
+            key,
+            createdAtMs: Date.now(),
+            usedBy: null,
+            usedEmail: null,
+            usedAt: null,
+            expiresAt: null
+          });
+        }
+        $("out").value = keys.join("\n");
+        show("ok", qty + " clé(s) générée(s).");
+        await refresh();
+      }catch(e){
+        show("err", e?.message || "Erreur génération");
+      }
+    };
+
+    $("btnRefresh").onclick = refresh;
+    $("btnLogout").onclick = async ()=>{ await logout(); location.href="./login.html"; };
+
+    refresh();
+  </script>
+</body>
+</html>

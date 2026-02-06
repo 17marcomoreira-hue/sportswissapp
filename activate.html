@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Tournoi — Activation</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#0b1220">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <style>
+    :root{--bg:#0b1220;--card:rgba(255,255,255,.92);--text:#0b1220;}
+    body{margin:0;min-height:100vh;display:grid;place-items:center;background:var(--bg);
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#fff;}
+    .card{width:min(560px,92vw);background:var(--card);color:var(--text);border-radius:18px;box-shadow:0 18px 40px rgba(0,0,0,.35);padding:16px;}
+    h1{margin:4px 0 8px;font-size:1.35rem;}
+    .muted{color:rgba(11,18,32,.70);font-size:.92rem;line-height:1.35}
+    label{display:block;margin:12px 0 6px;color:rgba(11,18,32,.70);font-size:.9rem}
+    input{width:100%;padding:12px 12px;border-radius:12px;border:1px solid rgba(11,18,32,.18);font-size:16px;outline:none;text-transform:uppercase;}
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px}
+    button{cursor:pointer;border:0;border-radius:12px;padding:11px 14px;font-weight:800}
+    .btn{background:linear-gradient(135deg,#2563eb,#7c3aed);color:#fff;flex:1}
+    .btn2{background:#fff;border:1px solid rgba(11,18,32,.18);color:#111827}
+    .msg{margin-top:10px;border-radius:12px;padding:10px 12px;display:none}
+    .msg.ok{display:block;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.25)}
+    .msg.err{display:block;background:rgba(239,68,68,.10);border:1px solid rgba(239,68,68,.25)}
+    .small{font-size:.85rem;color:rgba(11,18,32,.60)}
+    a{color:#2563eb;text-decoration:none;font-weight:800}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Activer l’accès</h1>
+    <div class="muted">Entre une clé d’activation pour débloquer l’app pendant <b>12 mois</b>.</div>
+
+    <div class="msg" id="msg"></div>
+
+    <label>Clé d’activation</label>
+    <input id="key" placeholder="XXXX-XXXX-XXXX"/>
+
+    <div class="row">
+      <button class="btn" id="btnActivate">Activer</button>
+      <button class="btn2" id="btnBack">Retour</button>
+    </div>
+
+    <div class="small" style="margin-top:10px">
+      <a href="./admin.html">Admin</a>
+    </div>
+  </div>
+
+  <script type="module">
+    import { waitForAuthReady, logout } from "./js/auth.js";
+    import { activateWithKey } from "./js/license.js";
+
+    const $ = (id)=>document.getElementById(id);
+    const msg = $("msg");
+
+    function show(type, text){
+      msg.className = "msg " + (type==="ok" ? "ok" : "err");
+      msg.textContent = text;
+    }
+
+    $("btnActivate").onclick = async ()=>{
+      msg.style.display="none";
+      try{
+        if(!navigator.onLine) throw new Error("Connexion internet requise pour activer.");
+        const user = await waitForAuthReady();
+        if(!user) { location.href="./login.html"; return; }
+        const key = $("key").value.trim();
+        const res = await activateWithKey(user, key);
+        show("ok", "Activé ! Expire le " + new Date(res.expiresAt).toLocaleDateString());
+        setTimeout(()=>location.href="./app.html", 700);
+      }catch(e){
+        show("err", e?.message || "Activation impossible");
+      }
+    };
+
+    $("btnBack").onclick = async ()=>{
+      await logout();
+      location.href="./login.html";
+    };
+  </script>
+</body>
+</html>

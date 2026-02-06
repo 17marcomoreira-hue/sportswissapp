@@ -1,0 +1,1592 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Tournoi – Gestion Rencontres & Scores (multi-sports) – v3.1</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#0b1220">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Tournoi">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+
+<!-- Données intégrées lors de l’export HTML (laissé vide dans le fichier “maître”) -->
+<script id="embeddedState" type="application/json"></script>
+<style>
+  :root{ --primary:#1565c0; --border:#d7dbe3; --bg:#f7f9fc; --muted:#6b7280; }
+  *{box-sizing:border-box}
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin:18px;background:var(--bg);color:#111827}
+  h1{margin:0 0 12px;font-size:1.7rem}
+  h2{margin:0 0 8px;font-size:1.2rem}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:16px;box-shadow:0 1px 2px rgba(16,24,40,.06)}
+  label{font-size:.9rem;color:var(--muted);display:block;margin-bottom:6px}
+  input, select{padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface)}
+  input[type=number]{text-align:center}
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:8px;border:1px solid var(--primary);color:#fff;background:var(--primary);cursor:pointer;font-weight:600;text-decoration:none}
+  .btn.secondary{background:var(--surface);color:var(--primary)}
+
+  .btn.danger{background:#dc2626;border-color:#dc2626;color:#fff}
+  .btn.danger:hover{filter:brightness(.95)}
+  .btn.danger:active{transform:translateY(1px)}
+
+  /* Boutons de navigation (style "app") */
+  .btn.nav{border:0;color:#fff;box-shadow:0 6px 18px rgba(2,6,23,.10);transition:transform .08s ease, filter .12s ease}
+  .btn.nav:hover{filter:brightness(.98)}
+  .btn.nav:active{transform:translateY(1px)}
+  .btn.nav.home{background:linear-gradient(135deg,#2563eb,#06b6d4)}
+  .btn.nav.points{background:linear-gradient(135deg,#7c3aed,#ec4899)}
+  .btn.nav.export{background:linear-gradient(135deg,#0ea5e9,#22c55e)}
+  .btn.nav.sheets{background:linear-gradient(135deg,#f97316,#f59e0b)}
+  .btn.nav.schedule{background:linear-gradient(135deg,#10b981,#14b8a6)}
+
+  /* Bandeau promo (accueil) */
+  .promo{
+    border:1px solid var(--border);
+    border-radius:16px;
+    padding:14px 14px;
+    background:linear-gradient(135deg, rgba(37,99,235,.10), rgba(236,72,153,.10), rgba(34,197,94,.08));
+    box-shadow:0 10px 26px rgba(2,6,23,.06);
+    margin:12px 0 16px;
+  }
+  .promo .title{font-size:1.05rem;font-weight:800;letter-spacing:.2px;margin:0 0 6px}
+  .promo .desc{margin:0;color:#0f172a;line-height:1.35}
+  .promo .chipRow{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .promo .chip{
+    display:inline-flex;align-items:center;gap:6px;
+    padding:6px 10px;border-radius:999px;
+    background:rgba(255,255,255,.75);
+    border:1px solid rgba(255,255,255,.55);
+    box-shadow:0 6px 16px rgba(2,6,23,.06);
+    font-weight:700;font-size:.85rem;color:#0b1220;
+    backdrop-filter: blur(6px);
+  }
+
+  .badge{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);background:#f3f4f6;color:#111;padding:4px 8px;border-radius:999px;font-size:.8rem}
+  table{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+  th, td{padding:10px;border-bottom:1px solid var(--border);text-align:center}
+  th{background:#eef2ff}
+  .muted{color:var(--muted)}
+  .nowrap{white-space:nowrap}
+  .grid{display:grid;gap:12px}
+  .grid-3{grid-template-columns:repeat(3, minmax(0, 1fr))}
+  .grid-4{grid-template-columns:repeat(4, minmax(0, 1fr))}
+  @media (max-width: 900px){.grid-4{grid-template-columns:repeat(2, minmax(0, 1fr))}}
+  @media (max-width: 680px){.grid-3{grid-template-columns:1fr}}
+  .list{display:grid;gap:8px}
+  .match{border:1px solid var(--border);border-radius:12px;padding:10px}
+  .pill{display:inline-block;padding:2px 8px;border-radius:999px;background:#f3f4f6;border:1px solid var(--border);font-size:.75rem}
+  .pill.danger{background:#fee2e2;border-color:#fecaca;color:#7f1d1d}
+  .search{position:relative}
+  .search input{padding-left:36px}
+  .search .icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);opacity:.6}
+
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center;padding:16px;z-index:50}
+  .modal.open{display:flex}
+  .modal .panel{background:var(--surface);color:inherit;border-radius:12px;border:1px solid var(--border);max-width:640px;width:100%;padding:14px}
+  .panel .footer{display:flex;gap:10px;justify-content:flex-end;margin-top:12px}
+
+  /* Navigation rapide (évite que la section soit masquée par la barre sticky) */
+  #matchesSection, #standingsSection { scroll-margin-top: 86px; }
+  @media (max-width: 560px){
+    #quickNav { gap:8px; }
+    #quickNav .btn { padding:10px 10px; font-size: .95rem; }
+  }
+
+
+  .infoIcon{
+    display:inline-flex;align-items:center;justify-content:center;
+    width:18px;height:18px;border-radius:999px;
+    border:1px solid var(--border);background:var(--surface);color:var(--primary);
+    font-size:12px;font-weight:800;line-height:1;margin-left:6px;
+    cursor:pointer; user-select:none;
+  }
+  .infoIcon:hover{ background:#eef2ff; }
+  .helpContent h3{ margin:0 0 6px; font-size:1.05rem; }
+  .helpContent p{ margin:0; color:#374151; line-height:1.35; }
+  .helpContent ul{ margin:8px 0 0 18px; color:#374151; }
+  .helpContent li{ margin:6px 0; }
+
+
+  .devCredit{
+    font-size:.85rem;
+    font-weight:700;
+    color:var(--muted);
+    margin-left:10px;
+    white-space:nowrap;
+  }
+  @media (max-width: 720px){
+    .devCredit{ display:block; margin-left:0; margin-top:4px; white-space:normal; }
+  }
+
+/* ==== Modern UI polish (2026) ==== */
+:root{
+  --primary:#2563eb;            /* blue-600 */
+  --primary-2:#7c3aed;          /* violet-600 */
+  --bg-0:#0b1220;               /* used for dark accents */
+  --surface: rgba(255,255,255,.86);
+  --surface-2: rgba(255,255,255,.72);
+  --shadow: 0 12px 30px rgba(16,24,40,.12);
+  --shadow-2: 0 6px 18px rgba(16,24,40,.10);
+  --ring: 0 0 0 4px rgba(37,99,235,.18);
+}
+
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#0b1220;
+    --border: rgba(255,255,255,.14);
+    --muted: rgba(255,255,255,.70);
+    --surface: rgba(17,24,39,.78);
+    --surface-2: rgba(17,24,39,.62);
+    --shadow: 0 18px 40px rgba(0,0,0,.45);
+    --shadow-2: 0 10px 28px rgba(0,0,0,.35);
+  }
+  body{ color: rgba(255,255,255,.92); }
+  table{ background: rgba(17,24,39,.65); }
+  th{ background: rgba(37,99,235,.12); }
+  .badge, .pill{ background: rgba(255,255,255,.06); }
+}
+
+body{
+  margin:0;
+  min-height:100vh;
+  background:
+    radial-gradient(1200px 800px at 10% 0%, rgba(37,99,235,.14), transparent 55%),
+    radial-gradient(900px 700px at 100% 20%, rgba(124,58,237,.12), transparent 55%),
+    radial-gradient(900px 700px at 40% 110%, rgba(16,185,129,.08), transparent 60%),
+    var(--bg);
+}
+
+#homeScreen, #appScreen{
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 18px 14px 80px;
+}
+
+.card{
+  border:1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.match{
+  border-radius: 16px;
+  background: var(--surface-2);
+  box-shadow: var(--shadow-2);
+}
+
+input, select{
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,.9);
+  font-size: 16px;            /* avoid iOS zoom */
+  outline: none;
+  transition: box-shadow .15s ease, border-color .15s ease, transform .05s ease;
+}
+@media (prefers-color-scheme: dark){
+  input, select{ background: rgba(17,24,39,.82); color: rgba(255,255,255,.92); }
+}
+
+input:focus, select:focus{
+  border-color: rgba(37,99,235,.45);
+  box-shadow: var(--ring);
+}
+
+.btn{
+  border-radius: 12px;
+  border: 0;
+  background: linear-gradient(135deg, var(--primary), var(--primary-2));
+  box-shadow: var(--shadow-2);
+  transition: transform .08s ease, filter .15s ease, box-shadow .15s ease;
+}
+.btn:hover{ filter: brightness(1.03); }
+.btn:active{ transform: translateY(1px); box-shadow: 0 4px 12px rgba(16,24,40,.12); }
+.btn.secondary{
+  background: rgba(255,255,255,.88);
+  color: var(--primary);
+  border: 1px solid var(--border);
+}
+@media (prefers-color-scheme: dark){
+  .btn.secondary{ background: rgba(17,24,39,.78); color: rgba(255,255,255,.92); }
+}
+
+.btn:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible{
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+table{
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+th{
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+header.row{
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  margin: 0 -14px 14px;
+  padding: 12px 14px;
+  background: linear-gradient(180deg, rgba(255,255,255,.78), rgba(255,255,255,.55));
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+@media (prefers-color-scheme: dark){
+  header.row{
+    background: linear-gradient(180deg, rgba(17,24,39,.78), rgba(17,24,39,.55));
+  }
+}
+
+h1{
+  letter-spacing: -.02em;
+  font-size: 1.6rem;
+}
+h2{
+  letter-spacing: -.01em;
+}
+
+.badge{
+  border-radius: 999px;
+  padding: 6px 10px;
+}
+
+#quickNav{
+  position: sticky;
+  top: 68px;
+  z-index: 39;
+  background: transparent;
+  padding: 8px 0 10px;
+}
+#quickNav .btn{
+  background: rgba(255,255,255,.88);
+  color: #111827;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-2);
+}
+@media (prefers-color-scheme: dark){
+  #quickNav .btn{ background: rgba(17,24,39,.78); color: rgba(255,255,255,.92); }
+}
+#quickNav .btn.primaryNav{
+  background: linear-gradient(135deg, var(--primary), var(--primary-2));
+  color: #fff;
+  border: 0;
+}
+
+#updateBanner{
+  background: var(--surface) !important;
+  border: 1px solid var(--border) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Make long tables scroll nicely on small screens */
+.tableWrap{
+  overflow:auto;
+  border-radius: 18px;
+}
+.tableWrap table{ min-width: 720px; }
+@media (max-width: 720px){
+  .tableWrap table{ min-width: 640px; }
+}
+
+/* Subtle motion reduction */
+@media (prefers-reduced-motion: reduce){
+  *{ transition:none !important; scroll-behavior:auto !important; }
+}
+
+
+@media (prefers-color-scheme: dark){
+  /* Assure une bonne lisibilité dans les fenêtres / modales en mode sombre (notamment sur iPad en PWA) */
+  .helpContent p, .helpContent ul, .helpContent li{ color: rgba(255,255,255,.86) !important; }
+  .promo .desc{ color: rgba(255,255,255,.90) !important; }
+}
+
+
+/* === Améliorations lisibilité en mode sombre (iPad / PWA) === */
+@media (prefers-color-scheme: dark){
+  /* Surfaces plus opaques pour éviter l'effet "gris sur gris" */
+  :root{
+    --surface: rgba(17,24,39,.92);
+    --surface-2: rgba(17,24,39,.82);
+  }
+
+  /* Texte "muted" un peu plus clair, partout */
+  .muted{ color: rgba(255,255,255,.78); }
+
+  /* Badge "xx matchs · yy joués" : contraste renforcé */
+  .badge{
+    background: rgba(255,255,255,.10);
+    border-color: rgba(255,255,255,.18);
+    color: rgba(255,255,255,.92);
+    font-weight: 800;
+  }
+
+  /* Navigation Matchs / Classement / Haut : boutons lisibles */
+  #quickNav{
+    background: rgba(17,24,39,.90) !important;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+  #quickNav .btn{
+    background: rgba(255,255,255,.10) !important;
+    color: rgba(255,255,255,.92) !important;
+    border: 1px solid rgba(255,255,255,.18) !important;
+  }
+
+  /* Modales : titres et texte d'aide */
+  .modal .panel{ background: rgba(17,24,39,.94) !important; }
+  .modal .panel h2, .modal .panel h3{ color: rgba(255,255,255,.96) !important; }
+  .helpContent p, .helpContent ul, .helpContent li{ color: rgba(255,255,255,.88) !important; }
+
+  /* Encadré explicatif ATP */
+  #atpScoringBox > div{ background: rgba(255,255,255,.06) !important; }
+}
+
+/* Option : forcer le thème clair quoi qu'il arrive (désactivé)
+   -> décommente si tu veux ignorer le mode sombre des appareils */
+/*
+:root{ color-scheme: light; }
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#f7f9fc; --border:#d7dbe3; --muted:#6b7280; --surface: rgba(255,255,255,.92); --surface-2: rgba(255,255,255,.82); }
+  body{ color:#111827; }
+}
+*/
+
+</style>
+</head>
+<body>
+
+  <div id="updateBanner" style="display:none; position:fixed; left:12px; right:12px; bottom:12px; z-index:9999;
+    background:var(--surface)fff; color:#0b1220; border:1px solid rgba(11,18,32,.18); border-radius:14px; padding:10px 12px;
+    box-shadow:0 12px 28px rgba(0,0,0,.25);">
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+      <div style="font-weight:700;">Nouvelle version disponible — recharger</div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <button id="btnReloadUpdate" class="btn" style="height:38px;">Recharger</button>
+        <button id="btnDismissUpdate" class="btn secondary" style="height:38px;">Plus tard</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Accueil (multi-tournois) -->
+  <div id="homeScreen" style="display:none;max-width:1100px;margin:0 auto;padding:18px;">
+    <header style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;">
+      <div>
+        <h1 style="margin:0;">Tournois</h1>
+        <div class="muted" style="font-size:.95rem">Créer, reprendre et gérer plusieurs tournois sur cet appareil.</div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end;">
+        <div class="muted" style="font-size:.85rem">Développé par <b>Marco Moreira-Perriard</b></div>
+      </div>
+    </header>
+    <div class="promo" aria-label="Présentation des fonctionnalités">
+      <p class="title">✨ Organise ton tournoi en quelques clics  !</p>
+      <p class="desc">Crée les équipes, génère horaires & terrains, saisis les scores et suis le classement en direct. Personnalise les points, exporte les feuilles de match, et active le mode ATP pour un classement évolutif inspiré du circuit pro.</p>
+      <div class="chipRow">
+        <span class="chip">🗓️ Horaires & terrains</span>
+        <span class="chip">🏆 Classement live</span>
+        <span class="chip">🧮 Points personnalisables</span>
+        <span class="chip">📄 Exports PDF</span>
+        <span class="chip">🎾 Mode ATP</span>
+      </div>
+    </div>
+
+
+    <div style="margin-top:14px;border:1px solid var(--border);background:var(--surface);border-radius:14px;padding:12px;display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
+      <div style="flex:1;min-width:240px;">
+        <label class="muted" style="display:block;font-size:.8rem;margin:0 0 6px;">Nom du nouveau tournoi</label>
+        <input id="newTournamentName" placeholder="Ex : Tournoi 10S – mercredi" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:12px;">
+      </div>
+      <button id="btnCreateTournament" class="btn" style="height:42px;">Créer</button>
+      <button id="btnResumeLast" class="btn secondary" style="height:42px;display:none;">Reprendre le dernier</button>
+      <a href="./tuto_installation_tournoi.html" class="btn secondary" style="height:42px;display:inline-flex;align-items:center;">📲 Installer l’app</a>
+    </div>
+
+    <div style="margin-top:14px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+      <h2 style="margin:0;">Mes tournois</h2>
+      <button id="btnClearAll" class="btn danger" style="display:none;">Tout supprimer</button>
+    </div>
+    <div id="tournamentsList" style="margin-top:10px;"></div>
+    <div id="noTournaments" class="muted" style="display:none;margin-top:10px;border:1px dashed var(--border);border-radius:14px;padding:12px;">
+      Aucun tournoi enregistré. Crée ton premier tournoi ci-dessus.
+    </div>
+  </div>
+
+  <!-- Application (tournoi) -->
+  <div id="appScreen" style="display:none;">
+
+  <header class="row" style="justify-content:space-between;align-items:flex-end">
+    <div>
+      <h1>Tournoi (multi-sports) <span class="devCredit">Développé par Marco Moreira-Perriard</span></h1>
+      <div class="muted" style="font-size:.9rem">Round-robin · planification par créneaux · PDF 1 fichier (1 page/équipe) · sauvegarde locale</div>
+    </div>
+    <div class="row">
+      <button id="btnHome" class="btn nav home" title="Retour à l’accueil">🏠 Accueil</button>
+      <button id="btnScoring" class="btn nav points">Paramètres points</button>
+      <button id="btnExportPDF" class="btn nav export" title="1 fichier, 1 page par équipe" disabled>Exporter horaires (PDF)</button>
+      <button id="btnExportSheet" class="btn nav sheets" title="Feuille des matchs imprimable" disabled>Exporter feuille des matchs (PDF)</button>
+      <button id="btnExportCourtsSheet" class="btn nav sheets" title="Feuilles pour arbitres, triées par terrain" disabled>Exporter feuilles arbitres (PDF)</button>
+</div>
+  </header>
+
+  <nav id="quickNav" class="row" style="position:sticky;top:0;z-index:50;background:var(--bg);padding:10px 0;border-bottom:1px solid var(--border);margin-bottom:12px">
+    <button class="btn secondary" type="button" onclick="goTo('matchesSection')">📋 Matchs</button>
+    <button class="btn secondary" type="button" onclick="goTo('standingsSection')">🏆 Classement</button>
+    <button class="btn secondary" type="button" onclick="window.scrollTo({top:0,behavior:'smooth'})">⬆️ Haut</button>
+  </nav>
+
+
+  <section class="card">
+    <h2>Équipes</h2>
+    <div class="row" style="align-items:flex-end">
+      <div>
+        <label for="teamCount">Nombre d’équipes</label>
+        <input id="teamCount" type="number" min="2" max="24" value="10" style="width:96px" />
+      </div>
+      <button id="btnGenerate" class="btn">Générer le calendrier</button>
+      <span class="badge" id="badgeMatches">0 match</span>
+    </div>
+    <div id="teamsGrid" class="grid grid-4" style="margin-top:10px"></div>
+  </section>
+
+  <section id="matchesSection" class="card">
+    <div class="row" style="justify-content:space-between;align-items:center">
+      <h2 style="margin:0">Matchs <span class="muted" style="font-weight:normal;font-size:.9rem">(tri : heure → terrain → round)</span></h2>
+      <button id="btnSchedule" class="btn nav schedule" disabled>Définir terrains et horaire</button>
+    </div>
+
+    <div class="search" style="margin-top:8px">
+      <svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+      <input id="search" type="text" placeholder="Rechercher une équipe" />
+    </div>
+
+    <div id="matchesList" class="list" style="margin-top:10px"></div>
+  </section>
+
+  <section id="standingsSection" class="card">
+    <h2>Classement</h2>
+    <div id="standingsBox" class="muted" style="border:1px dashed var(--border);border-radius:10px;padding:12px">Génère d’abord le calendrier.</div>
+  </section>
+
+  <!-- Modale points -->
+  <div id="modalScoring" class="modal" aria-hidden="true">
+    <div class="panel">
+      <h2>Paramètres des points</h2>
+      <div class="row" style="margin-top:6px;align-items:center;justify-content:space-between">
+        <div>
+          <span class="badge">⚙️ Mode</span>
+          <span class="muted" style="font-size:.9rem;margin-left:6px">Standard ou <b>Mode ATP</b> (points victoire selon le classement)</span>
+        </div>
+        <label class="row" style="gap:8px;margin:0">
+          <input id="scoreATPMode" type="checkbox" style="transform:scale(1.1)" />
+          <span>Mode ATP</span>
+        </label>
+      </div>
+
+      <div id="standardScoringBox" class="grid grid-3" style="margin-top:8px">
+        <div><label for="scoreWin">Victoire</label><input id="scoreWin" type="number" value="3" /></div>
+        <div><label for="scoreDraw">Égalité<span class="infoIcon" data-help="draw" role="button" tabindex="0" aria-label="Aide: Égalité">i</span></label><input id="scoreDraw" type="number" value="1" /></div>
+        <div><label for="scoreLoss">Défaite</label><input id="scoreLoss" type="number" value="0" /></div>
+      </div>
+
+      <div id="atpScoringBox" class="grid grid-3" style="margin-top:8px;display:none">
+        <div style="grid-column:1 / -1;border:1px solid var(--border);border-radius:10px;padding:10px;background:#fbfdff">
+          <label class="row" style="gap:8px;margin:0;justify-content:space-between">
+            <span><b>Classement ATP auto</b> <span class="muted" style="font-weight:normal">· basé sur le classement du tournoi</span></span>
+            <input id="atpAutoRank" type="checkbox" style="transform:scale(1.1)" />
+          </label>
+          <div class="muted" style="font-size:.85rem;margin-top:6px">Au début (avant résultats), tout le monde est à égalité (rang 1). Ensuite, les rangs sont mis à jour automatiquement après chaque match joué.</div>
+        </div>
+<div><label for="atpFavWin">Victoire du favori<span class="infoIcon" data-help="atpFavWin" role="button" tabindex="0" aria-label="Aide: Victoire du favori">i</span></label><input id="atpFavWin" type="number" value="3" /></div>
+        <div><label for="atpDogWin">Victoire de l'outsider<span class="infoIcon" data-help="atpDogWin" role="button" tabindex="0" aria-label="Aide: Victoire de l'outsider">i</span></label><input id="atpDogWin" type="number" value="5" /></div>
+        <div><label for="atpMaxWinPoints">Plafond victoire<span class="infoIcon" data-help="atpMaxWinPoints" role="button" tabindex="0" aria-label="Aide: Plafond victoire">i</span></label><input id="atpMaxWinPoints" type="number" value="10" /></div>
+        <div><label for="atpGapStep">Palier d'écart (rangs)<span class="infoIcon" data-help="atpGapStep" role="button" tabindex="0" aria-label="Aide: Palier d'écart (rangs)">i</span></label><input id="atpGapStep" type="number" value="3" /></div>
+        <div><label for="atpBonusPerStep">Bonus par palier<span class="infoIcon" data-help="atpBonusPerStep" role="button" tabindex="0" aria-label="Aide: Bonus par palier">i</span></label><input id="atpBonusPerStep" type="number" value="1" /></div>
+        <div><label for="scoreDraw2">Égalité<span class="infoIcon" data-help="scoreDraw2" role="button" tabindex="0" aria-label="Aide: Égalité">i</span></label><input id="scoreDraw2" type="number" value="1" /></div>
+      </div>
+      <div class="row footer">
+        <button id="btnScoreReset" class="btn secondary">Réinitialiser (3/1/0)</button>
+        <button id="btnScoreClose" class="btn">Fermer</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Modale aide paramètres points -->
+  <div id="modalHelp" class="modal" aria-hidden="true">
+    <div class="panel">
+      <div class="helpContent" id="helpContent"></div>
+      <div class="row footer">
+        <button id="btnHelpClose" class="btn">Fermer</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Modale planification -->
+  <div id="modalSchedule" class="modal" aria-hidden="true">
+    <div class="panel">
+      <h2>Définir terrains et horaire</h2>
+      <div class="grid grid-3" style="margin-top:8px">
+        <div><label for="startTime">Heure de début</label><input id="startTime" type="text" value="09:00" placeholder="HH:MM" /></div>
+        <div><label for="slotMin">Durée d’un créneau (min)</label><input id="slotMin" type="number" value="15" /></div>
+        <div><label for="courts">Nombre de terrains</label><input id="courts" type="number" value="3" /><div class="muted" style="font-size:.8rem">Terrains : A, B, C…</div></div>
+      </div>
+      <div class="row footer">
+        <button id="btnScheduleCancel" class="btn secondary">Annuler</button>
+        <button id="btnScheduleApply" class="btn">Appliquer</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script>
+// --- iPad/iOS-friendly PDF save for jsPDF ---
+  function isIOS(){
+    return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+           (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); // iPadOS "desktop"
+  }
+
+  async function savePdfIOSFriendly(doc, filename){
+    // 1) jsPDF -> Blob
+    const pdfBlob = doc.output('blob');
+
+    // 2) iOS: sometimes behaves better with octet-stream for download/share workflows
+    const outBlob = isIOS()
+      ? new Blob([pdfBlob], { type: 'application/octet-stream' })
+      : pdfBlob;
+
+    // Desktop / non-iOS: download directly
+    if(!isIOS() && typeof doc.save === 'function'){
+      doc.save(filename);
+      return;
+    }
+
+    // 3) Best UX on iPad: Web Share (Save to Files, AirDrop, etc.)
+    try{
+      const file = new File([pdfBlob], filename, { type: 'application/pdf' });
+      if (navigator.canShare && navigator.canShare({ files: [file] }) && navigator.share){
+        await navigator.share({ files: [file], title: filename });
+        return;
+      }
+    }catch(e){
+      // ignore and fallback
+    }
+
+    // 4) Fallback: open PDF in a new tab (user can Share -> Save to Files)
+    const url = URL.createObjectURL(outBlob);
+    const w = window.open(url, '_blank', 'noopener,noreferrer');
+    if(!w) window.location.href = url;
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  }
+  // --- end iPad/iOS-friendly PDF save ---
+</script>
+  <script>
+    let LS_KEY='tournament_multi_sport_v1';
+    function uid(){ return Math.random().toString(16).slice(2)+Date.now().toString(16); }
+    function pad2(n){ return String(n).padStart(2,'0'); }
+    function parseHHMM(s){ const txt=String(s||'').trim(); const m=txt.match(/^([0-9]{1,2}):([0-9]{2})$/); if(!m) return null; const hh=Number(m[1]), mm=Number(m[2]); if(!Number.isFinite(hh)||!Number.isFinite(mm)) return null; if(hh<0||hh>23||mm<0||mm>59) return null; return hh*60+mm; }
+    function formatHHMM(total){ const hh=Math.floor(total/60), mm=total%60; return pad2(hh)+':'+pad2(mm); }
+    function clampNonNegInt(v){ if(v===null||v===undefined||v==='') return null; const n=Number(v); if(!Number.isFinite(n)) return null; const i=Math.trunc(n); return i<0? null : i; }
+    function defaultTeams(n){ const nn=Math.max(2,Math.min(24,Math.trunc(Number(n)||10))); return Array.from({length:nn},(_,i)=>({id:uid(), name:'Équipe '+(i+1), rank:1})); }
+    function courtLabel(i){ return 'Terrain '+String.fromCharCode(65+i); }
+
+    function roundRobin(teamIds){ const ids=[...teamIds]; if(ids.length%2!==0) ids.push('BYE'); const arr=[...ids]; const rounds=arr.length-1; const half=arr.length/2; const out=[]; for(let r=0;r<rounds;r++){ for(let i=0;i<half;i++){ const a=arr[i], b=arr[arr.length-1-i]; if(a!=='BYE'&&b!=='BYE') out.push({id:uid(), round:r+1, a, b, time:'', court:'', scoreA:null, scoreB:null}); } const fixed=arr[0]; const rest=arr.slice(1); const last=rest.pop(); if(last!==undefined) rest.unshift(last); arr.splice(0,arr.length,fixed,...rest); } return out; }
+
+    function courtSortKey(court){ const s=String(court||'').trim(); const num=s.match(/([0-9]+)/); if(num) return Number(num[1]); const letter=s.match(/([A-Za-z])/); if(letter){ const ch=letter[1].toUpperCase(); return 1000+(ch.charCodeAt(0)-65); } return 999999; }
+    function compareByTimeThenCourtThenRound(a,b){ const ta=parseHHMM(a.time), tb=parseHHMM(b.time); if(ta!==null && tb!==null){ if(ta!==tb) return ta-tb; } else if(ta!==null){ return -1; } else if(tb!==null){ return 1; } const ca=courtSortKey(a.court), cb=courtSortKey(b.court); if(ca!==cb) return ca-cb; if(a.round!==b.round) return a.round-b.round; return a.id.localeCompare(b.id); }
+
+    function computeMatchOutcome(m){ if(m.scoreA==null||m.scoreB==null) return null; const a=m.scoreA, b=m.scoreB; if(!Number.isInteger(a)||!Number.isInteger(b)) return null; if(a<0||b<0) return null; if(a===b) return {type:'draw'}; return a>b? {type:'win', winner:m.a, loser:m.b} : {type:'win', winner:m.b, loser:m.a}; }
+
+    function computeStandings(teams, matches, scoring){
+      const rows=new Map();
+      const rankMap=new Map();
+      for(const t of teams){
+        rows.set(t.id,{teamId:t.id,name:t.name,played:0,wins:0,draws:0,losses:0,points:0,scoredFor:0,scoredAgainst:0,diff:0});
+        const r = (t.rank==null || t.rank==='') ? null : Number(t.rank);
+        rankMap.set(t.id, (Number.isFinite(r) && r>0) ? Math.trunc(r) : null);
+      }
+
+      function winPointsATP(winnerId, loserId){
+        if(!scoring.atpMode) return scoring.win;
+        const wr = rankMap.get(winnerId);
+        const lr = rankMap.get(loserId);
+
+        // Si classement manquant: on retombe sur "victoire favori"
+        if(wr==null || lr==null) return Number(scoring.atpFavWin||scoring.win||3);
+
+        // Plus petit rang = meilleur
+        const favWin = Number(scoring.atpFavWin||3);
+        const dogWinBase = Number(scoring.atpDogWin||5);
+        const step = Math.max(1, Math.trunc(Number(scoring.atpGapStep||3)));
+        const bonus = Number(scoring.atpBonusPerStep||1);
+        const maxPts = Math.max(0, Math.trunc(Number(scoring.atpMaxWinPoints||10)));
+
+        if(wr <= lr){
+          // favori (ou égal) gagne
+          return favWin;
+        }
+        // outsider gagne -> bonus selon l'écart de rangs
+        const gap = wr - lr; // positif
+        const steps = Math.floor(gap / step);
+        const pts = dogWinBase + (steps * bonus);
+        return maxPts>0 ? Math.min(pts, maxPts) : pts;
+      }
+
+      for(const m of matches){
+        const out=computeMatchOutcome(m);
+        if(!out) continue;
+        const A=rows.get(m.a), B=rows.get(m.b);
+        if(!A||!B) continue;
+
+        A.played++; B.played++;
+        A.scoredFor+=m.scoreA; A.scoredAgainst+=m.scoreB;
+        B.scoredFor+=m.scoreB; B.scoredAgainst+=m.scoreA;
+
+        if(out.type==='draw'){
+          A.draws++; B.draws++;
+          A.points+=scoring.draw;
+          B.points+=scoring.draw;
+        } else {
+          if(out.winner===m.a){
+            A.wins++; B.losses++;
+            A.points+=winPointsATP(m.a, m.b);
+            B.points+=scoring.loss;
+          } else {
+            B.wins++; A.losses++;
+            B.points+=winPointsATP(m.b, m.a);
+            A.points+=scoring.loss;
+          }
+        }
+      }
+
+      const list=Array.from(rows.values()).map(r=>({...r, diff:r.scoredFor-r.scoredAgainst}));
+      list.sort((x,y)=>{
+        if(y.points!==x.points) return y.points-x.points;
+        if(y.diff!==x.diff) return y.diff-x.diff;
+        if(y.scoredFor!==x.scoredFor) return y.scoredFor-x.scoredFor;
+        return x.name.localeCompare(y.name,'fr');
+      });
+      return list;
+    }
+
+
+    // Mode ATP + Classement ATP auto : calcul séquentiel
+    // (les points d'un match sont calculés avec le rang *au moment du match*,
+    // puis le rang est mis à jour selon le classement du tournoi en barème standard 3/1/0).
+    function computeStandingsATPAuto(teams, matches, scoring){
+      // Base rows
+      const rows=new Map();
+      for(const t of teams){
+        rows.set(t.id,{teamId:t.id,name:t.name,played:0,wins:0,draws:0,losses:0,points:0,scoredFor:0,scoredAgainst:0,diff:0});
+      }
+
+      // Rang courant (auto) utilisé pour attribuer les points ATP
+      const rankMap=new Map();
+      for(const t of teams){ rankMap.set(t.id, 1); }
+
+      function winPointsATP(winnerId, loserId){
+        const wr = rankMap.get(winnerId);
+        const lr = rankMap.get(loserId);
+
+        // Si classement manquant: on retombe sur "victoire du favori"
+        if(wr==null || lr==null) return Number(scoring.atpFavWin||scoring.win||3);
+
+        const favWin = Number(scoring.atpFavWin||3);
+        const dogWinBase = Number(scoring.atpDogWin||5);
+        const step = Math.max(1, Math.trunc(Number(scoring.atpGapStep||3)));
+        const bonus = Number(scoring.atpBonusPerStep||1);
+        const maxPts = Math.max(0, Math.trunc(Number(scoring.atpMaxWinPoints||10)));
+
+        if(wr <= lr) return favWin; // favori (ou égal) gagne
+
+        const gap = wr - lr;
+        const steps = Math.floor(gap / step);
+        const pts = dogWinBase + (steps * bonus);
+        return maxPts>0 ? Math.min(pts, maxPts) : pts;
+      }
+
+      // Ordre de traitement : par horaire/terrain si renseignés, sinon round
+      const playedMatches = matches
+        .filter(m=>computeMatchOutcome(m)!==null)
+        .slice()
+        .sort(compareByTimeThenCourtThenRound);
+
+      const rankingScoring = Object.assign({}, scoring, { atpMode:false, win:3, draw:1, loss:0 });
+
+      // Helper: met à jour rankMap selon le classement du tournoi (barème standard)
+      function updateRanksFromTournament(partialMatches){
+        const rankRows = computeStandings(teams, partialMatches, rankingScoring);
+
+        let rank = 1;
+        let prevKey = null;
+        const newRanks = new Map();
+        for(let i=0;i<rankRows.length;i++){
+          const r = rankRows[i];
+          const key = `${r.points}|${r.diff}|${r.scoredFor}`;
+          if(prevKey!==null && key!==prevKey) rank += 1;
+          newRanks.set(r.teamId, rank);
+          prevKey = key;
+        }
+        // équipes sans match (si jamais) -> rang 1
+        for(const t of teams){
+          if(!newRanks.has(t.id)) newRanks.set(t.id, 1);
+        }
+        for(const [k,v] of newRanks.entries()){
+          rankMap.set(k,v);
+        }
+        return newRanks;
+      }
+
+      // Simulation match par match
+      const partial = [];
+      let lastRanks = new Map(rankMap);
+
+      for(const m of playedMatches){
+        const out=computeMatchOutcome(m);
+        if(!out) continue;
+        partial.push(m);
+
+        const A=rows.get(m.a), B=rows.get(m.b);
+        if(!A||!B) continue;
+
+        A.played++; B.played++;
+        A.scoredFor+=m.scoreA; A.scoredAgainst+=m.scoreB;
+        B.scoredFor+=m.scoreB; B.scoredAgainst+=m.scoreA;
+
+        if(out.type==='draw'){
+          A.draws++; B.draws++;
+          A.points+=Number(scoring.draw||0);
+          B.points+=Number(scoring.draw||0);
+        } else {
+          if(out.winner===m.a){
+            A.wins++; B.losses++;
+            A.points+=winPointsATP(m.a, m.b);
+            B.points+=Number(scoring.loss||0);
+          } else {
+            B.wins++; A.losses++;
+            B.points+=winPointsATP(m.b, m.a);
+            A.points+=Number(scoring.loss||0);
+          }
+        }
+
+        // met à jour les rangs pour les prochains matchs
+        lastRanks = updateRanksFromTournament(partial);
+      }
+
+      const list=Array.from(rows.values()).map(r=>({...r, diff:r.scoredFor-r.scoredAgainst}));
+      list.sort((x,y)=>{
+        if(y.points!==x.points) return y.points-x.points;
+        if(y.diff!==x.diff) return y.diff-x.diff;
+        if(y.scoredFor!==x.scoredFor) return y.scoredFor-x.scoredFor;
+        return x.name.localeCompare(y.name,'fr');
+      });
+
+      return { rows:list, finalRanks:lastRanks };
+    }
+
+function syncATPRanksFromTournament(){
+  if(!scoring.atpMode || !scoring.atpAutoRank) return false;
+
+  // Si aucun match joué: tout le monde à égalité (rang 1)
+  const played = matches.filter(m=>computeMatchOutcome(m)!==null).length;
+  const newRanks = new Map();
+
+  if(played===0){
+    for(const t of teams) newRanks.set(t.id, 1);
+  } else {
+    // IMPORTANT: pour éviter une boucle (rangs -> points ATP -> rangs),
+    // on calcule les rangs du tournoi avec un barème *standard* (3/1/0),
+    // puis on applique le Mode ATP pour les points du classement affiché.
+    const rankingScoring = Object.assign({}, scoring, { atpMode:false, win:3, draw:1, loss:0 });
+    const rows = computeStandings(teams, matches, rankingScoring);
+
+    // Dense ranking (1,2,2,3...)
+    let rank = 1;
+    let prevKey = null;
+    for(let i=0;i<rows.length;i++){
+      const r = rows[i];
+      const key = `${r.points}|${r.diff}|${r.scoredFor}`;
+      if(prevKey!==null && key!==prevKey) rank += 1;
+      newRanks.set(r.teamId, rank);
+      prevKey = key;
+    }
+  }
+
+  let changed=false;
+  for(const t of teams){
+    const nr = newRanks.get(t.id) ?? 1;
+    if(t.rank !== nr){
+      t.rank = nr;
+      changed=true;
+    }
+  }
+  return changed;
+}
+
+
+
+    function safeParse(txt){ if(!txt) return null; try{ return JSON.parse(txt); }catch{return null;} }
+
+    // State
+    let teamCount=10; let teams=defaultTeams(10); let matches=[]; let scoring={win:3, draw:1, loss:0, atpMode:false, atpAutoRank:true, atpFavWin:3, atpDogWin:5, atpGapStep:3, atpBonusPerStep:1, atpMaxWinPoints:10}; let startTime='09:00'; let slotMin=15; let courts=3; let search='';
+
+    // Elements
+    const teamCountEl=document.getElementById('teamCount');
+    const teamsGrid=document.getElementById('teamsGrid');
+    const badgeMatches=document.getElementById('badgeMatches');
+    const matchesList=document.getElementById('matchesList');
+    const standingsBox=document.getElementById('standingsBox');
+    const btnGenerate=document.getElementById('btnGenerate');
+    const btnSchedule=document.getElementById('btnSchedule');
+    const btnExportPDF=document.getElementById('btnExportPDF');
+    const btnExportSheet=document.getElementById('btnExportSheet');
+    const btnExportCourtsSheet=document.getElementById('btnExportCourtsSheet');
+const searchEl=document.getElementById('search');
+
+    const modalScoring=document.getElementById('modalScoring');
+    const btnScoring=document.getElementById('btnScoring');
+    const inputWin=document.getElementById('scoreWin');
+    const inputDraw=document.getElementById('scoreDraw');
+    const inputLoss=document.getElementById('scoreLoss');
+    const btnScoreClose=document.getElementById('btnScoreClose');
+    const btnScoreReset=document.getElementById('btnScoreReset');
+
+    const inputATPMode=document.getElementById('scoreATPMode');
+    const standardScoringBox=document.getElementById('standardScoringBox');
+    const atpScoringBox=document.getElementById('atpScoringBox');
+    const inputAtpFavWin=document.getElementById('atpFavWin');
+    const inputAtpDogWin=document.getElementById('atpDogWin');
+    const inputAtpGapStep=document.getElementById('atpGapStep');
+    const inputAtpBonusPerStep=document.getElementById('atpBonusPerStep');
+    const inputAtpMaxWinPoints=document.getElementById('atpMaxWinPoints');
+    const inputDraw2=document.getElementById('scoreDraw2');
+    const inputAtpAutoRank=document.getElementById('atpAutoRank');
+
+    const modalSchedule=document.getElementById('modalSchedule');
+    // Aide contextuelle (icônes "i") — paramètres des points
+    const modalHelp = document.getElementById('modalHelp');
+    const helpContent = document.getElementById('helpContent');
+    const btnHelpClose = document.getElementById('btnHelpClose');
+
+    const HELP_TEXT = {
+      atpFavWin: {
+        title: "Victoire du favori",
+        body: "Points attribués au gagnant lorsque l’équipe la mieux classée (rang plus petit) gagne le match."
+      },
+      atpDogWin: {
+        title: "Victoire de l'outsider",
+        body: "Base de points attribuée au gagnant lorsque l’équipe la moins bien classée (rang plus grand) gagne. Un bonus peut s’ajouter selon l’écart de rangs."
+      },
+      atpMaxWinPoints: {
+        title: "Plafond victoire",
+        body: "Limite maximale de points qu’une victoire peut rapporter (même si l’écart de rangs est très grand)."
+      },
+      atpGapStep: {
+        title: "Palier d'écart",
+        body: "Taille d’un palier d’écart (en rangs) pour déclencher un bonus. Exemple : palier = 5 → bonus à +5, +10, +15… rangs."
+      },
+      atpBonusPerStep: {
+        title: "Bonus par palier",
+        body: "Nombre de points ajoutés à la base 'victoire de l’outsider' pour chaque palier d’écart franchi."
+      },
+      scoreDraw2: {
+        title: "Égalité (Mode ATP)",
+        body: "Points attribués à chaque équipe en cas de score identique."
+      },
+      draw: {
+        title: "Égalité (Standard)",
+        body: "Points attribués à chaque équipe en cas de score identique."
+      },
+      exportHTML: {
+        title: "Exporter fichier (HTML)",
+        body: "Télécharge une copie de cette page <strong>avec toutes les données actuelles</strong> (équipes, planning, scores, classements). Vous pourrez ensuite <strong>reprendre le tournoi plus tard</strong> en rouvrant simplement le fichier HTML sauvegardé."
+      }
+    };
+
+    function openHelp(key){
+      const k = String(key||'').trim();
+      const data = HELP_TEXT[k];
+      if(!data) return;
+      helpContent.innerHTML = `<h3>${data.title}</h3><p>${data.body}</p>`;
+      modalHelp.classList.add('open');
+    }
+
+    function closeHelp(){
+      modalHelp.classList.remove('open');
+    }
+
+    // Clic sur les icônes
+    document.addEventListener('click', (e)=>{
+      const btn = e.target.closest && e.target.closest('.infoIcon');
+      if(btn){
+        openHelp(btn.dataset.help);
+      }
+    });
+
+    // Accessibilité clavier (Entrée/Espace)
+    document.addEventListener('keydown', (e)=>{
+      const active = document.activeElement;
+      if(active && active.classList && active.classList.contains('infoIcon')){
+        if(e.key === 'Enter' || e.key === ' '){
+          e.preventDefault();
+          openHelp(active.dataset.help);
+        }
+      }
+      if(e.key === 'Escape' && modalHelp.classList.contains('open')){
+        closeHelp();
+      }
+    });
+
+    // Fermeture modale
+    if(btnHelpClose) btnHelpClose.addEventListener('click', closeHelp);
+    if(modalHelp) modalHelp.addEventListener('click', (e)=>{ if(e.target === modalHelp) closeHelp(); });
+
+    const btnScheduleApply=document.getElementById('btnScheduleApply');
+    const btnScheduleCancel=document.getElementById('btnScheduleCancel');
+    const startTimeEl=document.getElementById('startTime');
+    const slotMinEl=document.getElementById('slotMin');
+    const courtsEl=document.getElementById('courts');
+
+    function saveLS(){ localStorage.setItem(LS_KEY, JSON.stringify({teamCount,teams,matches,startTime,slotMin,courts,scoring})); }
+    function loadLS(){ const saved=safeParse(localStorage.getItem(LS_KEY)); if(saved&&saved.teams&&saved.matches){ teamCount=saved.teamCount||saved.teams.length||10; teams=saved.teams; matches=saved.matches; startTime=saved.startTime||'09:00'; slotMin=saved.slotMin||15; courts=saved.courts||3; if(saved.scoring) scoring=saved.scoring;
+      // Migration : champs manquants (anciennes versions)
+      scoring = Object.assign({win:3, draw:1, loss:0, atpMode:false, atpAutoRank:true, atpFavWin:3, atpDogWin:5, atpGapStep:3, atpBonusPerStep:1, atpMaxWinPoints:10}, scoring);
+      teams = teams.map((t,i)=>({ ...t, rank: (t.rank==null? 1 : t.rank)}));
+    }
+    }
+
+    function loadEmbeddedState(){
+  const el=document.getElementById('embeddedState');
+  if(!el) return false;
+  const raw=(el.textContent||'').trim();
+  if(!raw) return false;
+  const saved=safeParse(raw);
+  if(saved&&saved.teams&&saved.matches){
+    teamCount=saved.teamCount||saved.teams.length||10;
+    teams=saved.teams;
+    matches=saved.matches;
+    startTime=saved.startTime||'09:00';
+    slotMin=saved.slotMin||15;
+    courts=saved.courts||3;
+    if(saved.scoring) scoring=saved.scoring;
+    // Migration : champs manquants (anciennes versions)
+    scoring = Object.assign({win:3, draw:1, loss:0, atpMode:false, atpAutoRank:true, atpFavWin:3, atpDogWin:5, atpGapStep:3, atpBonusPerStep:1, atpMaxWinPoints:10}, scoring);
+    teams = teams.map((t,i)=>({ ...t, rank: (t.rank==null? 1 : t.rank)}));
+    // Persiste aussi dans le navigateur pour retrouver facilement l’état au prochain lancement.
+    saveLS();
+    return true;
+  }
+  return false;
+}
+
+
+function addDeveloperFooter(doc){
+  const pageCount = doc.getNumberOfPages ? doc.getNumberOfPages() : 1;
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const footer = 'Développé par Marco Moreira-Perriard';
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(8);
+  for(let i=1;i<=pageCount;i++){
+    doc.setPage(i);
+    if(typeof doc.setTextColor === 'function') doc.setTextColor(120);
+    doc.text(footer, pageW/2, pageH - 8, { align:'center' });
+    if(typeof doc.setTextColor === 'function') doc.setTextColor(0);
+  }
+}
+
+function stateToSafeJson(obj){
+  // Évite les soucis si du JSON contient des caractères spéciaux dans un <script>.
+  return JSON.stringify(obj).replace(/</g,'\\u003c');
+}
+
+
+    function renderTeams(){
+      teamsGrid.innerHTML='';
+      teams.forEach((t,idx)=>{
+        const wrap=document.createElement('div');
+
+        const lab=document.createElement('label');
+        lab.textContent='Équipe '+(idx+1);
+        wrap.appendChild(lab);
+
+        const row=document.createElement('div');
+        row.className='row';
+        row.style.gap='8px';
+
+        const inp=document.createElement('input');
+        inp.type='text';
+        inp.value=t.name;
+        inp.placeholder='Nom';
+        inp.style.flex='1 1 auto';
+        inp.addEventListener('input',()=>{
+          teams[idx].name=inp.value;
+          renderMatches(); renderStandings(); saveLS();
+        });
+
+        const rank=document.createElement('input');
+        rank.type='number';
+        rank.min='1';
+        rank.value=(t.rank==null? 1 : t.rank);
+        rank.title='Classement (plus petit = meilleur)';
+        rank.style.width='92px';
+        rank.disabled = !!scoring.atpMode && !!scoring.atpAutoRank;
+        rank.style.opacity = rank.disabled ? '.6' : '1';
+        rank.addEventListener('input',()=>{
+          const v=Number(rank.value);
+          teams[idx].rank = Number.isFinite(v) && v>0 ? Math.trunc(v) : null;
+          renderStandings(); saveLS();
+        });
+
+        row.appendChild(inp);
+        row.appendChild(rank);
+        wrap.appendChild(row);
+
+        const hint=document.createElement('div');
+        hint.className='muted';
+        hint.style.fontSize='.78rem';
+        hint.textContent = (scoring.atpMode && scoring.atpAutoRank)
+          ? 'Classement ATP: auto (selon classement du tournoi)'
+          : 'Classement: 1 = meilleur (utilisé en Mode ATP)';
+        wrap.appendChild(hint);
+
+        teamsGrid.appendChild(wrap);
+      });
+    }
+
+    function renderMatches(){ const teamName=new Map(); teams.forEach(t=>teamName.set(t.id,t.name)); const q=(search||'').trim().toLowerCase(); const base = !q? matches : matches.filter(m=> (teamName.get(m.a)||'').toLowerCase().includes(q) || (teamName.get(m.b)||'').toLowerCase().includes(q) ); const list = base.slice().sort(compareByTimeThenCourtThenRound); matchesList.innerHTML=''; if(matches.length===0){ matchesList.innerHTML='<div class="muted" style="border:1px dashed var(--border);border-radius:10px;padding:12px">Génère le calendrier pour voir les matchs.</div>'; return; } if(list.length===0){ matchesList.innerHTML='<div class="muted" style="border:1px dashed var(--border);border-radius:10px;padding:12px">Aucun match ne correspond à la recherche.</div>'; return; }
+      list.forEach(m=>{ const aName=teamName.get(m.a)||'?'; const bName=teamName.get(m.b)||'?'; const invalid=(m.scoreA!==null||m.scoreB!==null) && (computeMatchOutcome(m)===null); const box=document.createElement('div'); box.className='match'; const top=document.createElement('div'); top.className='row'; top.style.justifyContent='space-between'; const left=document.createElement('div'); left.className='row'; const br=document.createElement('span'); br.className='pill'; br.textContent='Round '+m.round; left.appendChild(br); if(invalid){ const bad=document.createElement('span'); bad.className='pill danger'; bad.textContent='Score invalide'; left.appendChild(bad); } const btc=document.createElement('span'); btc.className='pill'; btc.textContent=(m.time||'—')+' · '+(m.court||'—'); left.appendChild(btc); top.appendChild(left); const right=document.createElement('div'); right.className='row'; const tIn=document.createElement('input'); tIn.style.width='90px'; tIn.placeholder='HH:MM'; tIn.value=m.time; tIn.addEventListener('input',()=>{ m.time=tIn.value; saveLS(); }); const cIn=document.createElement('input'); cIn.style.width='110px'; cIn.placeholder='Terrain'; cIn.value=m.court; cIn.addEventListener('input',()=>{ m.court=cIn.value; saveLS(); }); right.appendChild(tIn); right.appendChild(cIn); top.appendChild(right);
+        const mid=document.createElement('div'); mid.className='grid'; mid.style.gridTemplateColumns='1fr auto 1fr'; mid.style.alignItems='center'; mid.style.gap='8px'; mid.style.marginTop='8px'; const aDiv=document.createElement('div'); aDiv.style.textAlign='left'; aDiv.style.fontWeight='600'; aDiv.textContent=aName; const center=document.createElement('div'); center.className='row'; center.style.justifyContent='center'; const sa=document.createElement('input'); sa.type='number'; sa.inputMode='numeric'; sa.style.width='70px'; sa.value=m.scoreA==null? '' : m.scoreA; sa.placeholder='0+'; sa.addEventListener('input',()=>{ m.scoreA=clampNonNegInt(sa.value); renderStandings(); saveLS(); }); const sep=document.createElement('span'); sep.className='muted'; sep.textContent='–'; const sb=document.createElement('input'); sb.type='number'; sb.inputMode='numeric'; sb.style.width='70px'; sb.value=m.scoreB==null? '' : m.scoreB; sb.placeholder='0+'; sb.addEventListener('input',()=>{ m.scoreB=clampNonNegInt(sb.value); renderStandings(); saveLS(); }); center.appendChild(sa); center.appendChild(sep); center.appendChild(sb); const bDiv=document.createElement('div'); bDiv.style.textAlign='right'; bDiv.style.fontWeight='600'; bDiv.textContent=bName; mid.appendChild(aDiv); mid.appendChild(center); mid.appendChild(bDiv);
+        const rule=document.createElement('div'); rule.className='muted'; rule.style.fontSize='.85rem'; rule.textContent='Règle : victoire si score supérieur, égalité si score identique.';
+        box.appendChild(top); box.appendChild(mid); box.appendChild(rule); matchesList.appendChild(box); }); }
+
+    function renderStandings(){
+      let rows=null;
+      let rankChanged=false;
+
+      if(scoring.atpMode && scoring.atpAutoRank){
+        // Mode ATP + Classement ATP auto: points calculés avec le rang "au moment du match"
+        const res = computeStandingsATPAuto(teams, matches, scoring);
+        rows = res.rows || [];
+
+        // Met à jour l'affichage des rangs (rang courant basé sur le classement du tournoi)
+        const finalRanks = res.finalRanks || new Map();
+        for(const t of teams){
+          const nr = finalRanks.get(t.id) ?? 1;
+          if(t.rank !== nr){
+            t.rank = nr;
+            rankChanged = true;
+          }
+        }
+      } else {
+        // Mode normal (ou ATP manuel)
+        const rc = syncATPRanksFromTournament();
+        if(rc) rankChanged=true;
+        rows = computeStandings(teams, matches, scoring);
+      }
+
+      if(rankChanged) renderTeams();
+
+      if(matches.length===0){
+        standingsBox.className='muted';
+        standingsBox.style.border='1px dashed var(--border)';
+        standingsBox.style.padding='12px';
+        standingsBox.innerHTML='Génère d\'abord le calendrier.';
+        return;
+      }
+
+      const table=document.createElement('table');
+      const thead=document.createElement('thead');
+      thead.innerHTML='<tr><th class="nowrap">#</th><th>Équipe</th><th>J</th><th>V</th><th>N</th><th>D</th><th>Pts</th><th>Marqués</th><th>Encaissés</th><th>Diff</th></tr>';
+      table.appendChild(thead);
+
+      const tbody=document.createElement('tbody');
+      (rows||[]).forEach((s,idx)=>{
+        const tr=document.createElement('tr');
+        tr.innerHTML=`<td>${idx+1}</td><td class="nowrap">${s.name}</td><td>${s.played}</td><td>${s.wins}</td><td>${s.draws}</td><td>${s.losses}</td><td><b>${s.points}</b></td><td>${s.scoredFor}</td><td>${s.scoredAgainst}</td><td>${s.diff}</td>`;
+        tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+
+      standingsBox.className='';
+      standingsBox.style.border='none';
+      standingsBox.style.padding='0';
+      standingsBox.innerHTML='';
+      standingsBox.appendChild(table);
+    }
+
+    function refreshBadges(){ const played=matches.filter(m=>computeMatchOutcome(m)!==null).length; badgeMatches.textContent=`${matches.length} match${matches.length>1?'s':''} · ${played} joué${played>1?'s':''}`; }
+
+    // Auto planif
+    function applyAutoSchedule(){ if(matches.length===0) return; const start=parseHHMM(startTime); if(start===null){ alert('Heure invalide (HH:MM) – ex: 09:00'); return; } const courtsN=Math.max(1,Math.trunc(Number(courts)||1)); const slot=Math.max(1,Math.trunc(Number(slotMin)||15)); const remaining=matches.slice().sort((a,b)=> (a.round!==b.round? a.round-b.round : a.id.localeCompare(b.id))).map(m=>({...m})); const updated=new Map(); let current=start; let guard=0, GUARD_MAX=remaining.length*20+200; while(remaining.length>0 && guard++<GUARD_MAX){ const used=new Set(); const picked=[]; for(let c=0;c<courtsN;c++){ let found=-1; for(let i=0;i<remaining.length;i++){ const m=remaining[i]; if(used.has(m.a)||used.has(m.b)) continue; found=i; break; } if(found===-1) break; const m=remaining[found]; used.add(m.a); used.add(m.b); picked.push(found); updated.set(m.id,{...m,time:formatHHMM(current), court:courtLabel(c)}); } picked.sort((a,b)=>b-a).forEach(i=>remaining.splice(i,1)); if(picked.length===0) break; current+=slot; } if(updated.size===0){ alert('Impossible de planifier automatiquement avec ces paramètres.'); return; } matches = matches.map(m=>updated.get(m.id)||m); saveLS(); renderMatches(); }
+
+    // Export PDF 1 fichier / 1 page équipe
+    function exportSchedulePDF(){ const { jsPDF } = window.jspdf || {}; if(!jsPDF){ alert('jsPDF non chargé.'); return; } const doc=new jsPDF({unit:'mm',format:'a4'}); const pageW=doc.internal.pageSize.getWidth(); const margin=14; const colX={ time:margin, court:margin+26, opp:margin+56, round:margin+146, score:margin+168 }; const nowTxt=new Date().toLocaleString(); const teamName=new Map(); teams.forEach(t=>teamName.set(t.id,t.name)); teams.forEach((team,idx)=>{ if(idx>0) doc.addPage(); doc.setFont('helvetica','bold'); doc.setFontSize(16); doc.text('Horaire – '+(team.name||''), margin, 18); doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.text('Généré le '+nowTxt, margin, 24); doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.text('Heure', colX.time, 34); doc.text('Terrain', colX.court, 34); doc.text('Adversaire', colX.opp, 34); doc.text('Round', colX.round, 34); doc.text('Score', colX.score, 34); doc.setLineWidth(0.2); doc.line(margin, 36, pageW - margin, 36); const my = matches.filter(m=>m.a===team.id||m.b===team.id).slice().sort(compareByTimeThenCourtThenRound); doc.setFont('helvetica','normal'); doc.setFontSize(10); let y=43, rowH=6; if(my.length===0){ doc.text('Aucun match.', margin, y); return; } for(const m of my){ const oppId=m.a===team.id? m.b : m.a; const opp=teamName.get(oppId)||'?'; const oppShort=opp.length>38? opp.slice(0,35)+'…' : opp; const score=(m.scoreA==null||m.scoreB==null)? '' : String(m.scoreA)+'–'+String(m.scoreB); doc.text(m.time||'', colX.time, y); doc.text(m.court||'', colX.court, y); doc.text(oppShort, colX.opp, y); doc.text(String(m.round), colX.round, y); doc.text(score, colX.score, y); y+=rowH; if(y>285){ doc.addPage(); y=18; doc.setFont('helvetica','bold'); doc.setFontSize(12); doc.text('Horaire – '+(team.name||'')+' (suite)', margin, y); y+=10; doc.setFontSize(11); doc.text('Heure', colX.time, y); doc.text('Terrain', colX.court, y); doc.text('Adversaire', colX.opp, y); doc.text('Round', colX.round, y); doc.text('Score', colX.score, y); doc.line(margin, y+2, pageW-margin, y+2); doc.setFont('helvetica','normal'); doc.setFontSize(10); y+=9; } } }); addDeveloperFooter(doc); savePdfIOSFriendly(doc, 'tournoi_horaires_par_equipe.pdf'); }
+
+    // Export PDF : Feuille des matchs à remplir
+    
+function exportCourtSheetsPDF(){ const { jsPDF } = window.jspdf || {}; if(!jsPDF){ alert('jsPDF non chargé.'); return; }
+  const doc=new jsPDF({unit:'mm',format:'a4'}); const pageW=doc.internal.pageSize.getWidth(); const pageH=doc.internal.pageSize.getHeight(); const margin=12;
+  const nowTxt=new Date().toLocaleString();
+  const titleBase='Feuilles arbitres – par terrain';
+  const teamName=new Map(); teams.forEach(t=>teamName.set(t.id,t.name));
+
+  const sortedAll = matches.slice().sort(compareByTimeThenCourtThenRound);
+  const groups=new Map();
+  for(const m of sortedAll){
+    const key=(m.court||'Terrain').trim() || 'Terrain';
+    if(!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(m);
+  }
+  const courtKeys=[...groups.keys()].sort((a,b)=>a.localeCompare(b,'fr',{numeric:true,sensitivity:'base'}));
+
+  const fitText=(txt,maxW)=>{ if(!txt) return ''; if(doc.getTextWidth(txt)<=maxW) return txt; let t=String(txt);
+    while(t.length>1 && doc.getTextWidth(t+'…')>maxW){ t=t.slice(0,-1); } return (t.length>1? t+'…' : '…'); };
+
+  const col={ time:margin, round:margin+22, teamA:margin+40, scoreA:margin+118, scoreB:margin+134, teamB:pageW - margin };
+  const rowH=7;
+
+  let pageIndex=0;
+
+  function header(courtLabel, suffix){ pageIndex+=1;
+    doc.setFont('helvetica','bold'); doc.setFontSize(15);
+    doc.text(titleBase, margin, 16);
+    doc.setFontSize(12);
+    doc.text(String(courtLabel)+(suffix||''), margin, 23);
+    doc.setFont('helvetica','normal'); doc.setFontSize(9);
+    doc.text('Généré le '+nowTxt+'  ·  Page '+pageIndex, margin, 28);
+    doc.setLineWidth(0.2); doc.line(margin, 31, pageW - margin, 31);
+    doc.setFont('helvetica','bold'); doc.setFontSize(10);
+    doc.text('Heure', col.time, 37);
+    doc.text('Rd', col.round, 37);
+    doc.text('Équipe A', col.teamA, 37);
+    doc.text('Résultat', (col.scoreA+col.scoreB)/2, 37, {align:'center'});
+    doc.text('Équipe B', col.teamB, 37, {align:'right'});
+    doc.setLineWidth(0.2); doc.line(margin, 39, pageW - margin, 39);
+  }
+
+  // Start
+  let first=true;
+  for(const court of courtKeys){
+    const list=groups.get(court) || [];
+    if(!first) doc.addPage(); // page break between courts
+    first=false;
+    header(court,'');
+    doc.setFont('helvetica','normal'); doc.setFontSize(10);
+    let y=45;
+    let part=1;
+
+    for(let i=0;i<list.length;i++){
+      const m=list[i];
+      const a=teamName.get(m.a)||'?';
+      const b=teamName.get(m.b)||'?';
+      const maxWA=(col.scoreA-6)-col.teamA;
+      const maxWB=col.teamB-(col.scoreB+16);
+      const aShort=fitText(a, Math.max(10,maxWA));
+      const bShort=fitText(b, Math.max(10,maxWB));
+
+      if(y>pageH - margin - 10){
+        doc.addPage();
+        header(court,' (suite '+(++part)+')');
+        doc.setFont('helvetica','normal'); doc.setFontSize(10);
+        y=45;
+      }
+
+      doc.text(m.time||'', col.time, y);
+      doc.text(String(m.round), col.round, y);
+      doc.text(aShort, col.teamA, y);
+
+      // score boxes (always empty for manual fill)
+      doc.rect(col.scoreA - 2, y - 5, 10, 6);
+      doc.rect(col.scoreB - 2, y - 5, 10, 6);
+      doc.text('-', col.scoreB - 6, y); // small separator between boxes
+
+      doc.text(bShort, col.teamB, y, {align:'right'});
+
+      doc.setLineWidth(0.1); doc.line(margin, y + 2, pageW - margin, y + 2);
+      y+=rowH;
+    }
+  }
+  addDeveloperFooter(doc);
+  savePdfIOSFriendly(doc, 'tournoi_feuilles_arbitres_par_terrain.pdf');
+}
+
+
+function exportMatchSheetPDF(){ const { jsPDF } = window.jspdf || {}; if(!jsPDF){ alert('jsPDF non chargé.'); return; } const doc=new jsPDF({unit:'mm',format:'a4'}); const pageW=doc.internal.pageSize.getWidth(); const pageH=doc.internal.pageSize.getHeight(); const margin=12; const nowTxt=new Date().toLocaleString(); const title='Feuille des matchs (à remplir)'; const teamName=new Map(); teams.forEach(t=>teamName.set(t.id,t.name)); const sorted = matches.slice().sort(compareByTimeThenCourtThenRound); const col={ time:margin, court:margin+22, round:margin+44, teamA:margin+62, scoreA:margin+120, scoreB:margin+138, teamB:pageW - margin };
+      function header(pageIndex){ doc.setFont('helvetica','bold'); doc.setFontSize(15); doc.text(title, margin, 16); doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.text('Généré le '+nowTxt+'  ·  Page '+pageIndex, margin, 22); doc.setLineWidth(0.2); doc.line(margin, 25, pageW - margin, 25); doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.text('Heure', col.time, 31); doc.text('Terrain', col.court, 31); doc.text('Rd', col.round, 31); doc.text('Équipe A', col.teamA, 31); doc.text('A', col.scoreA, 31); doc.text('B', col.scoreB, 31); doc.text('Équipe B', col.teamB, 31, {align:'right'}); doc.setLineWidth(0.2); doc.line(margin, 33, pageW - margin, 33); }
+      let pageIndex=1; header(pageIndex); doc.setFont('helvetica','normal'); doc.setFontSize(10); const fitText=(txt,maxW)=>{ if(!txt) return ''; if(doc.getTextWidth(txt)<=maxW) return txt; let t=String(txt); while(t.length>1 && doc.getTextWidth(t+'…')>maxW){ t=t.slice(0,-1); } return (t.length>1? t+'…' : '…'); }; let y=39; const rowH=7; for(let i=0;i<sorted.length;i++){ const m=sorted[i]; const a=teamName.get(m.a)||'?'; const b=teamName.get(m.b)||'?'; const maxWA=(col.scoreA-6)-col.teamA; const maxWB=col.teamB-(col.scoreB+16); const aShort=fitText(a, Math.max(10,maxWA)); const bShort=fitText(b, Math.max(10,maxWB)); if(y>pageH - margin - 10){ doc.addPage(); pageIndex+=1; header(pageIndex); doc.setFont('helvetica','normal'); doc.setFontSize(10); y=39; } doc.text(m.time||'', col.time, y); doc.text(m.court||'', col.court, y); doc.text(String(m.round), col.round, y); doc.text(aShort, col.teamA, y); doc.rect(col.scoreA - 2, y - 5, 10, 6); doc.rect(col.scoreB - 2, y - 5, 10, 6); if(m.scoreA!=null) doc.text(String(m.scoreA), col.scoreA + 3, y); if(m.scoreB!=null) doc.text(String(m.scoreB), col.scoreB + 3, y); doc.text(bShort, col.teamB, y, {align:'right'}); doc.setLineWidth(0.1); doc.line(margin, y + 2, pageW - margin, y + 2); y+=rowH; }
+  addDeveloperFooter(doc);
+  savePdfIOSFriendly(doc, 'tournoi_feuille_matchs_a_remplir.pdf'); }
+
+    // Bindings
+    teamCountEl.addEventListener('input',()=>{ const n=Math.max(2,Math.min(24,Math.trunc(Number(teamCountEl.value)||10))); teamCountEl.value=String(n); teamCount=n; teams=defaultTeams(n); matches=[]; renderTeams(); renderMatches(); renderStandings(); refreshBadges(); btnSchedule.disabled=true; btnExportPDF.disabled=true; btnExportSheet.disabled=true; btnExportCourtsSheet.disabled=true; /* export HTML reste disponible */ saveLS(); });
+    btnGenerate.addEventListener('click',()=>{ matches=roundRobin(teams.map(t=>t.id)); renderMatches(); renderStandings(); refreshBadges(); btnSchedule.disabled=matches.length===0; btnExportPDF.disabled=matches.length===0; btnExportSheet.disabled=matches.length===0; btnExportCourtsSheet.disabled=matches.length===0; saveLS(); });
+    searchEl.addEventListener('input',()=>{ search=searchEl.value||''; renderMatches(); });
+
+    document.getElementById('btnSchedule').addEventListener('click',()=>{ startTimeEl.value=startTime; slotMinEl.value=String(slotMin); courtsEl.value=String(courts); modalSchedule.classList.add('open'); });
+    btnScheduleCancel.addEventListener('click',()=>{ modalSchedule.classList.remove('open'); });
+    btnScheduleApply.addEventListener('click',()=>{ startTime=startTimeEl.value||'09:00'; slotMin=Math.max(1,Math.trunc(Number(slotMinEl.value)||15)); courts=Math.max(1,Math.trunc(Number(courtsEl.value)||1)); modalSchedule.classList.remove('open'); applyAutoSchedule(); });
+
+    btnScoring.addEventListener('click',()=>{
+      // remplir la modale
+      inputWin.value=String(scoring.win);
+      inputDraw.value=String(scoring.draw);
+      inputLoss.value=String(scoring.loss);
+
+      inputATPMode.checked = !!scoring.atpMode;
+      if(inputAtpAutoRank) inputAtpAutoRank.checked = (scoring.atpAutoRank!==false);
+
+      inputAtpFavWin.value = String(scoring.atpFavWin ?? 3);
+      inputAtpDogWin.value = String(scoring.atpDogWin ?? 5);
+      inputAtpGapStep.value = String(scoring.atpGapStep ?? 3);
+      inputAtpBonusPerStep.value = String(scoring.atpBonusPerStep ?? 1);
+      inputAtpMaxWinPoints.value = String(scoring.atpMaxWinPoints ?? 10);
+      inputDraw2.value = String(scoring.draw ?? 1);
+
+      // UI
+      const showATP = !!inputATPMode.checked;
+      standardScoringBox.style.display = showATP ? 'none' : 'grid';
+      atpScoringBox.style.display = showATP ? 'grid' : 'none';
+
+      modalScoring.classList.add('open');
+    });
+    btnScoreReset.addEventListener('click',()=>{
+      scoring={win:3, draw:1, loss:0, atpMode:false, atpFavWin:3, atpDogWin:5, atpGapStep:3, atpBonusPerStep:1, atpMaxWinPoints:10};
+
+      inputATPMode.checked=false;
+
+      inputWin.value='3';
+      inputDraw.value='1';
+      inputLoss.value='0';
+
+      inputAtpFavWin.value='3';
+      inputAtpDogWin.value='5';
+      inputAtpGapStep.value='5';
+      inputAtpBonusPerStep.value='1';
+      inputAtpMaxWinPoints.value='10';
+      inputDraw2.value='1';
+
+      standardScoringBox.style.display='grid';
+      atpScoringBox.style.display='none';
+    });
+    btnScoreClose.addEventListener('click',()=>{
+      const atpOn = !!inputATPMode.checked;
+      scoring.atpMode = atpOn;
+      scoring.atpAutoRank = atpOn ? (inputAtpAutoRank ? !!inputAtpAutoRank.checked : true) : (scoring.atpAutoRank!==false);
+
+      // Champs communs
+      scoring.loss = Number(inputLoss.value||0);
+      scoring.draw = Number((atpOn ? inputDraw2.value : inputDraw.value) || 1);
+
+      if(!atpOn){
+        scoring.win = Number(inputWin.value||3);
+      }
+
+      // Paramètres Mode ATP (utilisés seulement si atpMode=true)
+      scoring.atpFavWin = Number(inputAtpFavWin.value||3);
+      scoring.atpDogWin = Number(inputAtpDogWin.value||5);
+      scoring.atpGapStep = Math.max(1, Math.trunc(Number(inputAtpGapStep.value||3)));
+      scoring.atpBonusPerStep = Number(inputAtpBonusPerStep.value||1);
+      scoring.atpMaxWinPoints = Math.max(0, Math.trunc(Number(inputAtpMaxWinPoints.value||10)));
+
+      // Normalise (si valeurs incohérentes)
+      scoring = Object.assign({win:3, draw:1, loss:0, atpMode:false, atpAutoRank:true, atpFavWin:3, atpDogWin:5, atpGapStep:3, atpBonusPerStep:1, atpMaxWinPoints:10}, scoring);
+
+      modalScoring.classList.remove('open');
+      saveLS();
+      renderTeams();
+      renderStandings();
+    });
+
+    inputATPMode.addEventListener('change',()=>{
+      const showATP = !!inputATPMode.checked;
+      standardScoringBox.style.display = showATP ? 'none' : 'grid';
+      atpScoringBox.style.display = showATP ? 'grid' : 'none';
+      // synchronise l'égalité
+      if(showATP){ inputDraw2.value = inputDraw.value || inputDraw2.value || '1'; }
+      else { inputDraw.value = inputDraw2.value || inputDraw.value || '1'; }
+      // met à jour les champs 'classement' (désactivés si auto)
+      renderTeams();
+    });
+
+    btnExportPDF.addEventListener('click', exportSchedulePDF);
+    btnExportSheet.addEventListener('click', exportMatchSheetPDF);
+    btnExportCourtsSheet.addEventListener('click', exportCourtSheetsPDF);
+// Init
+    (function initHub(){
+      const HUB_INDEX_KEY='TOURNOIS_INDEX_V1';
+      const HUB_ACTIVE_KEY='TOURNOIS_ACTIVE_ID_V1';
+      const LEGACY_KEY='tournament_multi_sport_v1'; // ancienne clé mono-tournoi
+
+      const homeScreen=document.getElementById('homeScreen');
+      const appScreen=document.getElementById('appScreen');
+      const listEl=document.getElementById('tournamentsList');
+      const emptyEl=document.getElementById('noTournaments');
+      const btnClearAll=document.getElementById('btnClearAll');
+      const btnResumeLast=document.getElementById('btnResumeLast');
+      const nameInput=document.getElementById('newTournamentName');
+
+      function safeParse(s){ try{return JSON.parse(s);}catch(e){return null;} }
+      function loadIndex(){ return safeParse(localStorage.getItem(HUB_INDEX_KEY)) || []; }
+      function saveIndex(ix){ localStorage.setItem(HUB_INDEX_KEY, JSON.stringify(ix)); }
+      function stateKey(id){ return 'TOURNOI_STATE_'+id; }
+      function uid(){ return 't_' + Math.random().toString(36).slice(2,10) + Date.now().toString(36); }
+      function esc(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c])); }
+
+      function show(which){
+        homeScreen.style.display = (which==='home') ? 'block' : 'none';
+        appScreen.style.display  = (which==='app')  ? 'block' : 'none';
+      }
+
+      function resetToDefaults(){
+        // valeurs par défaut identiques au fichier original
+        teamCount=10;
+        teams=defaultTeams(10);
+        matches=[];
+        scoring={win:3, draw:1, loss:0, atpMode:false, atpAutoRank:true, atpFavWin:3, atpDogWin:5, atpGapStep:3, atpBonusPerStep:1, atpMaxWinPoints:10};
+        startTime='09:00';
+        slotMin=15;
+        courts=3;
+      }
+
+      function applyAndRender(){
+        teamCountEl.value=String(teamCount);
+        renderTeams(); 
+        renderMatches(); 
+        renderStandings(); 
+        refreshBadges();
+        btnSchedule.disabled = matches.length===0;
+        btnExportPDF.disabled = matches.length===0;
+        btnExportSheet.disabled = matches.length===0;
+      }
+
+      function openTournament(id){
+        localStorage.setItem(HUB_ACTIVE_KEY, id);
+        LS_KEY = stateKey(id);
+        // charge l'état (embedded > local) : pour éviter de recharger embedded à chaque fois, on force loadLS
+        loadLS();
+        const ix=loadIndex();
+        const t=ix.find(x=>x.id===id);
+        if(t){ t.updatedAt=Date.now(); saveIndex(ix); }
+        show('app');
+        applyAndRender();
+      }
+
+      function createTournament(name){
+        const id=uid();
+        const now=Date.now();
+        const ix=loadIndex();
+        ix.unshift({id, name, createdAt: now, updatedAt: now});
+        saveIndex(ix);
+
+        // initialise un état neuf
+        LS_KEY = stateKey(id);
+        resetToDefaults();
+        saveLS();
+        openTournament(id);
+      }
+
+      function deleteTournament(id){
+        localStorage.removeItem(stateKey(id));
+        const ix=loadIndex().filter(x=>x.id!==id);
+        saveIndex(ix);
+        const active=localStorage.getItem(HUB_ACTIVE_KEY);
+        if(active===id) localStorage.removeItem(HUB_ACTIVE_KEY);
+        renderHome();
+      }
+
+      function renameTournament(id){
+        const ix=loadIndex();
+        const t=ix.find(x=>x.id===id);
+        const cur=t?t.name:'';
+        const nn=prompt('Nouveau nom du tournoi :', cur);
+        if(nn && nn.trim() && t){
+          t.name=nn.trim(); t.updatedAt=Date.now(); saveIndex(ix);
+          renderHome();
+        }
+      }
+
+      function renderHome(){
+        show('home');
+        const ix=loadIndex();
+        const active=localStorage.getItem(HUB_ACTIVE_KEY);
+
+        // bouton reprendre
+        if(active && localStorage.getItem(stateKey(active))){
+          btnResumeLast.style.display='inline-flex';
+          btnResumeLast.onclick=()=>openTournament(active);
+        } else {
+          btnResumeLast.style.display='none';
+          btnResumeLast.onclick=null;
+        }
+
+        if(!ix.length){
+          listEl.innerHTML='';
+          emptyEl.style.display='block';
+          btnClearAll.style.display='none';
+          return;
+        }
+
+        emptyEl.style.display='none';
+        btnClearAll.style.display='inline-flex';
+        btnClearAll.onclick=()=>{
+          if(!confirm('Supprimer TOUS les tournois de cet appareil ?')) return;
+          const all=loadIndex();
+          all.forEach(t=>localStorage.removeItem(stateKey(t.id)));
+          localStorage.removeItem(HUB_INDEX_KEY);
+          localStorage.removeItem(HUB_ACTIVE_KEY);
+          renderHome();
+        };
+
+        listEl.innerHTML = ix.map(t=>`
+          <div style="border:1px solid var(--border);background:var(--surface);border-radius:14px;padding:12px;margin:10px 0;">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+              <div>
+                <div style="font-weight:800;">${esc(t.name)}</div>
+                <div class="muted" style="font-size:.8rem;">Dernière modif : ${new Date(t.updatedAt||t.createdAt).toLocaleString()}</div>
+              </div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <button class="btn" data-open="${t.id}">Ouvrir</button>
+                <button class="btn secondary" data-rename="${t.id}">Renommer</button>
+                <button class="btn danger" data-del="${t.id}">Supprimer</button>
+              </div>
+            </div>
+          </div>
+        `).join('');
+
+        listEl.querySelectorAll('[data-open]').forEach(b=>b.addEventListener('click', ()=>openTournament(b.dataset.open)));
+        listEl.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click', ()=>deleteTournament(b.dataset.del)));
+        listEl.querySelectorAll('[data-rename]').forEach(b=>b.addEventListener('click', ()=>renameTournament(b.dataset.rename)));
+      }
+
+      // Migration: si ancien état mono-tournoi existe, le transformer en tournoi "Importé"
+      (function migrateLegacy(){
+        const legacy = safeParse(localStorage.getItem(LEGACY_KEY));
+        if(!legacy) return;
+        // évite de migrer plusieurs fois
+        const ix=loadIndex();
+        const exists=ix.some(t=>t.id==='legacy');
+        if(exists) return;
+        const now=Date.now();
+        ix.push({id:'legacy', name:'Tournoi (importé)', createdAt: now, updatedAt: now});
+        saveIndex(ix);
+        localStorage.setItem(stateKey('legacy'), JSON.stringify(legacy));
+        localStorage.removeItem(LEGACY_KEY);
+      })();
+
+      // Wiring boutons
+      document.getElementById('btnCreateTournament').addEventListener('click', ()=>{
+        const nm=(nameInput.value||'').trim() || 'Nouveau tournoi';
+        createTournament(nm);
+      });
+      document.getElementById('btnHome').addEventListener('click', ()=>renderHome());
+
+      // Démarrage : toujours sur Accueil pour test
+      renderHome();
+    })();
+  
+    // Navigation rapide
+    function goTo(id){
+      const el = document.getElementById(id);
+      if(!el) return;
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+</script>
+
+  <footer class="muted" style="text-align:center;margin:18px 0 6px;font-size:.85rem">
+    Développé par <b>Marco Moreira-Perriard</b><br>
+    © 2026 Marco Moreira-Perriard — Tous droits réservés.
+  </footer>
+
+  </div>
+  <script>
+    // Service worker: offline + détection de mise à jour
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", async () => {
+        try {
+          const reg = await navigator.serviceWorker.register("./sw.js");
+
+          const banner = document.getElementById("updateBanner");
+          const btnReload = document.getElementById("btnReloadUpdate");
+          const btnDismiss = document.getElementById("btnDismissUpdate");
+
+          function showUpdatePrompt(waitingWorker) {
+            if (!banner) return;
+            banner.style.display = "block";
+
+            btnReload.onclick = () => {
+              waitingWorker?.postMessage({ type: "SKIP_WAITING" });
+            };
+
+            btnDismiss.onclick = () => {
+              banner.style.display = "none";
+            };
+          }
+
+          if (reg.waiting) {
+            showUpdatePrompt(reg.waiting);
+          }
+
+          reg.addEventListener("updatefound", () => {
+            const newWorker = reg.installing;
+            if (!newWorker) return;
+
+            newWorker.addEventListener("statechange", () => {
+              if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
+                showUpdatePrompt(newWorker);
+              }
+            });
+          });
+
+          navigator.serviceWorker.addEventListener("controllerchange", () => {
+            window.location.reload();
+          });
+        } catch (e) {
+          console.warn("Service worker non enregistré:", e);
+        }
+      });
+    }
+  </script>
+
+<script>
+  // iPad/iOS: améliore la saisie "Nombre d'équipes"
+  (function(){
+    const el = document.getElementById('teamCount');
+    if(!el) return;
+
+    const selectAll = () => {
+      try { el.select(); } catch(e) {}
+      try { el.setSelectionRange(0, String(el.value).length); } catch(e) {}
+    };
+
+    el.addEventListener('focus', () => setTimeout(selectAll, 0));
+    el.addEventListener('click', () => setTimeout(selectAll, 0));
+    el.addEventListener('touchend', () => setTimeout(selectAll, 0));
+
+    el.addEventListener('blur', () => {
+      if (el.value === '') {
+        if (typeof teamCount !== 'undefined') el.value = String(teamCount);
+      }
+    });
+  })();
+</script>
+
+</body>
+</html>

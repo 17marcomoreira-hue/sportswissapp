@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Installer l’application Tournoi</title>
+  <style>
+    :root{
+      --bg:#0b1220; --card:#ffffff; --text:#0b1220; --muted:rgba(11,18,32,.72);
+      --border:rgba(11,18,32,.14); --accent:#1976d2;
+    }
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:linear-gradient(180deg,var(--bg),#0f1a33 45%,#0b1220);color:#fff;}
+    .wrap{max-width:980px;margin:0 auto;padding:18px;}
+    header{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;padding:8px 0 14px;}
+    h1{margin:0;font-size:26px;line-height:1.15;}
+    .sub{color:rgba(255,255,255,.78);font-size:14px;margin-top:6px;}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;}
+    .card{background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:16px;padding:14px;box-shadow:0 10px 24px rgba(0,0,0,.22);}
+    .card h2{margin:0 0 8px;font-size:16px;}
+    ol{margin:8px 0 0 18px;padding:0;}
+    li{margin:6px 0;color:rgba(11,18,32,.88);}
+    .tip{margin-top:10px;padding:10px 12px;border-radius:12px;background:rgba(25,118,210,.12);border:1px solid rgba(25,118,210,.25);color:rgba(11,18,32,.92);}
+    .tip b{color:var(--text);}
+    .footer{margin-top:14px;color:rgba(255,255,255,.72);font-size:12px;}
+    a.btn{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);
+      color:#fff;text-decoration:none;border-radius:12px;padding:10px 12px;}
+    a.btn:hover{background:rgba(255,255,255,.16);}
+    code{background:rgba(11,18,32,.07);padding:2px 6px;border-radius:8px;border:1px solid rgba(11,18,32,.10);}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>Installer l’application Tournoi</h1>
+        <div class="sub">Une fois installée, l’app s’ouvre en plein écran et vos tournois restent enregistrés sur <b>cet appareil</b>.</div>
+      </div>
+      <a class="btn" href="./index.html">⬅ Retour à l’accueil</a>
+    </header>
+
+    <div class="grid">
+      <section class="card">
+        <h2>Mac (Chrome / Edge)</h2>
+        <ol>
+          <li>Ouvrez l’app dans <b>Chrome</b> (ou Edge).</li>
+          <li>Cliquez l’icône <b>Installer</b> dans la barre d’adresse <span aria-hidden="true">⬇️</span> (ou menu <b>⋯</b> → <b>Installer l’application</b>).</li>
+          <li>Lancez ensuite l’app depuis le <b>Dock</b> ou le <b>Launchpad</b>.</li>
+        </ol>
+        <div class="tip"><b>Conseil :</b> gardez le même navigateur et évitez la navigation privée pour conserver les tournois.</div>
+      </section>
+
+      <section class="card">
+        <h2>PC (Windows – Chrome / Edge)</h2>
+        <ol>
+          <li>Ouvrez l’app dans <b>Chrome</b> (ou Edge).</li>
+          <li>Cliquez <b>Installer</b> (icône +) dans la barre d’adresse ou menu <b>⋯</b> → <b>Installer</b>.</li>
+          <li>Ouvrez l’app depuis le <b>menu Démarrer</b> ou le raccourci créé.</li>
+        </ol>
+        <div class="tip"><b>Important :</b> ne supprimez pas les “données du site” si vous souhaitez garder les tournois.</div>
+      </section>
+
+      <section class="card">
+        <h2>Android (Chrome)</h2>
+        <ol>
+          <li>Ouvrez l’app dans <b>Chrome</b>.</li>
+          <li>Appuyez sur le menu <b>⋮</b> (en haut à droite).</li>
+          <li>Sélectionnez <b>Installer l’application</b> ou <b>Ajouter à l’écran d’accueil</b>.</li>
+          <li>Lancez l’app depuis l’icône sur l’écran d’accueil.</li>
+        </ol>
+        <div class="tip"><b>Astuce :</b> si “Installer” n’apparaît pas, rechargez la page et réessayez.</div>
+      </section>
+
+      <section class="card">
+        <h2>iPhone / iPad (Safari)</h2>
+        <ol>
+          <li>Ouvrez l’app dans <b>Safari</b> (pas Chrome).</li>
+          <li>Appuyez sur <b>Partager</b> (carré avec flèche).</li>
+          <li>Choisissez <b>Sur l’écran d’accueil</b>.</li>
+          <li>Validez avec <b>Ajouter</b>, puis lancez l’app depuis l’icône.</li>
+        </ol>
+        <div class="tip"><b>Note :</b> si l’option n’apparaît pas, ouvrez le lien directement dans Safari (pas depuis une autre app).</div>
+      </section>
+    </div>
+
+    <div class="footer">
+      <p><b>Conservation des tournois :</b> vos tournois sont enregistrés localement (sur l’appareil + navigateur). Ils restent disponibles d’une leçon à l’autre tant que vous ne supprimez pas les données du site et que vous n’utilisez pas la navigation privée.</p>
+      <p>Développé par Marco Moreira‑Perriard</p>
+    </div>
+  </div>
+</body>
+</html>
