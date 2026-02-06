@@ -43,8 +43,16 @@
     .tab.active{background:#fff;box-shadow:0 10px 24px rgba(0,0,0,.10)}
     .panel{display:none;margin-top:10px}
     .panel.active{display:block}
-    .pill{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;
-      background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.25);color:#0f5132;font-weight:900;font-size:.9rem}
+
+    /* ✅ Lisible sur fond sombre */
+    .pill{
+      display:inline-flex;align-items:center;gap:8px;padding:7px 10px;border-radius:999px;
+      background:rgba(255,255,255,.12);
+      border:1px solid rgba(255,255,255,.22);
+      color:rgba(255,255,255,.95);
+      font-weight:900;font-size:.95rem
+    }
+
     .features{display:grid;gap:10px;margin-top:12px}
     .feat{background:rgba(255,255,255,.72);border:1px solid rgba(11,18,32,.12);border-radius:16px;padding:12px}
     .feat b{display:block;margin-bottom:4px}
@@ -73,7 +81,8 @@
 
       <div class="features">
         <div class="feat"><b>📅 Organisation claire</b><span class="muted">Calendrier, terrains, rounds et suivi des résultats.</span></div>
-        <div class="feat"><b>📊 Classement automatique</b><span class="muted">Visualisation simple et lisible des performances.</span></div>
+        <div class="feat"><b>🧾 Feuilles arbitres par terrain</b><span class="muted">Imprime des feuilles prêtes à l’emploi pour chaque terrain et chaque horaire.</span></div>
+        <div class="feat"><b>🎾 Mode ATP automatique</b><span class="muted">Un mode conçu pour intégrer de la différenciation dans ton enseignement et tes entraînements.</span></div>
         <div class="feat"><b>💾 Sauvegarde</b><span class="muted">Export local + snapshot cloud (selon connexion).</span></div>
       </div>
 
@@ -249,4 +258,5 @@
   </script>
 </body>
 </html>
+
 
