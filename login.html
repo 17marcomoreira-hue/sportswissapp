@@ -3,205 +3,318 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Tournoi — Connexion</title>
+  <title>Tournois — Connexion</title>
+
   <link rel="manifest" href="manifest.webmanifest">
-  <meta name="theme-color" content="#0b1220">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <meta name="theme-color" content="#ffffff">
+
   <style>
-    :root{--bg:#0b1220;--card:rgba(255,255,255,.92);--text:#0b1220;--muted:rgba(11,18,32,.70)}
-    body{margin:0;min-height:100vh;display:grid;place-items:center;
+    :root{
+      --bg:#f6f7fb;
+      --card:#ffffff;
+      --text:#0b1220;
+      --muted:rgba(11,18,32,.62);
+      --line:rgba(11,18,32,.10);
+      --shadow:0 18px 45px rgba(15,23,42,.10);
+      --radius:18px;
+      --blue:#2563eb;
+      --purple:#7c3aed;
+      --green:#16a34a;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      min-height:100vh;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      color:var(--text);
       background:
-        radial-gradient(900px 700px at 15% 0%, rgba(37,99,235,.18), transparent 55%),
-        radial-gradient(900px 700px at 100% 15%, rgba(34,197,94,.12), transparent 55%),
-        radial-gradient(900px 700px at 55% 110%, rgba(236,72,153,.10), transparent 60%),
+        radial-gradient(900px 550px at 15% 10%, rgba(37,99,235,.18), transparent 55%),
+        radial-gradient(900px 550px at 95% 20%, rgba(124,58,237,.14), transparent 60%),
+        radial-gradient(900px 550px at 45% 105%, rgba(22,163,74,.10), transparent 60%),
         var(--bg);
-      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#fff;}
-    .wrap{width:min(980px,94vw);display:grid;gap:14px;grid-template-columns: 1.05fr .95fr;align-items:start}
-    @media (max-width: 880px){ .wrap{grid-template-columns:1fr} }
-    .card{background:var(--card);color:var(--text);border:1px solid rgba(11,18,32,.14);
-      border-radius:18px;box-shadow:0 18px 40px rgba(0,0,0,.35);padding:16px;}
-    h1{margin:4px 0 6px;font-size:1.35rem;}
-    .muted{color:var(--muted);font-size:.92rem;line-height:1.35}
-    label{display:block;margin:10px 0 6px;color:var(--muted);font-size:.9rem}
-    input{width:100%;padding:12px 12px;border-radius:12px;border:1px solid rgba(11,18,32,.18);font-size:16px;outline:none;}
-    input:focus{box-shadow:0 0 0 4px rgba(37,99,235,.18);border-color:rgba(37,99,235,.35)}
-    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px}
-    button{cursor:pointer;border:0;border-radius:12px;padding:11px 14px;font-weight:900}
-    .btn{background:linear-gradient(135deg,#2563eb,#7c3aed);color:#fff;flex:1}
-    .btn2{background:#fff;border:1px solid rgba(11,18,32,.18);color:#111827}
-    .btn:disabled,.btn2:disabled{opacity:.55;cursor:not-allowed}
-    .link{background:transparent;border:0;color:#2563eb;font-weight:900;padding:0}
-    .msg{margin-top:10px;border-radius:12px;padding:10px 12px;display:none}
-    .msg.ok{display:block;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.25)}
-    .msg.err{display:block;background:rgba(239,68,68,.10);border:1px solid rgba(239,68,68,.25)}
-    .top{display:flex;gap:12px;align-items:center}
-    .logo{width:54px;height:54px;border-radius:16px;background:linear-gradient(135deg,#4f46e5,#10b981);display:grid;place-items:center;overflow:hidden}
-    .logo img{width:42px;height:42px;object-fit:contain}
-    .tabs{display:flex;gap:8px;margin-top:12px}
-    .tab{flex:1;border-radius:12px;border:1px solid rgba(11,18,32,.14);padding:10px 12px;background:rgba(255,255,255,.65);
-      font-weight:900;color:#111827}
-    .tab.active{background:#fff;box-shadow:0 10px 24px rgba(0,0,0,.10)}
-    .panel{display:none;margin-top:10px}
-    .panel.active{display:block}
-
-    .pill{
-      display:inline-flex;align-items:center;gap:8px;padding:7px 10px;border-radius:999px;
-      background:rgba(255,255,255,.12);
-      border:1px solid rgba(255,255,255,.22);
-      color:rgba(255,255,255,.95);
-      font-weight:900;font-size:.95rem
     }
 
-    .features{display:grid;gap:10px;margin-top:12px}
-    .feat{background:rgba(255,255,255,.72);border:1px solid rgba(11,18,32,.12);border-radius:16px;padding:12px}
-    .feat b{display:block;margin-bottom:4px}
+    .wrap{width:min(1100px,92vw); margin:28px auto 22px;}
+    header{
+      display:flex; align-items:center; justify-content:space-between;
+      gap:14px; padding:10px 4px 16px;
+    }
+    .brand{display:flex; align-items:center; gap:10px;}
+    .logo{
+      width:44px;height:44px;border-radius:14px;
+      background:linear-gradient(135deg,var(--blue),var(--purple));
+      display:grid;place-items:center; overflow:hidden;
+      box-shadow:0 12px 28px rgba(37,99,235,.25);
+    }
+    .logo img{
+      width:30px;height:30px;object-fit:contain;
+      filter:drop-shadow(0 2px 6px rgba(0,0,0,.25));
+    }
+    .brandTitle{font-weight:950; letter-spacing:.2px}
+    .topNote{color:var(--muted); font-weight:800; font-size:.92rem}
 
-    .hero h2{margin:8px 0 6px;font-size:1.2rem;color:#fff}
-    .hero p{margin:0;color:rgba(255,255,255,.82);line-height:1.45}
-    .heroCard{background:rgba(17,24,39,.70);border:1px solid rgba(255,255,255,.14);border-radius:18px;padding:16px;
-      box-shadow:0 18px 40px rgba(0,0,0,.35)}
+    .grid{
+      display:grid;
+      grid-template-columns: 1.15fr .85fr;
+      gap:16px;
+      align-items:stretch;
+    }
+    @media (max-width: 920px){
+      .grid{grid-template-columns:1fr}
+      header{flex-direction:column; align-items:flex-start}
+    }
 
+    .card{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+
+    /* HERO */
+    .hero{padding:22px}
+    .kicker{
+      display:inline-flex; align-items:center; gap:10px;
+      padding:8px 12px; border-radius:999px;
+      background:rgba(37,99,235,.08);
+      border:1px solid rgba(37,99,235,.18);
+      color:rgba(37,99,235,.95);
+      font-weight:950;
+      letter-spacing:.1px;
+    }
+    .hero h1{
+      margin:14px 0 10px;
+      font-size:2.05rem;
+      line-height:1.08;
+      letter-spacing:-.4px;
+    }
+    .hero p{margin:0; color:var(--muted); line-height:1.55; font-size:1.02rem}
+
+    .badges{display:flex; gap:10px; flex-wrap:wrap; margin-top:14px}
     .badge{
-      display:inline-flex;align-items:center;gap:10px;
-      padding:10px 12px;border-radius:999px;
-      background:rgba(255,255,255,.12);
-      border:1px solid rgba(255,255,255,.20);
-      font-weight:1000;
-      font-size:1.15rem;
-      line-height:1.1;
-      color:#fff;
-    }
-
-    .compatWrap{margin-top:12px}
-    .compatTitle{font-weight:900;margin-bottom:8px;color:rgba(255,255,255,.92)}
-    .compatBadges{display:flex;gap:10px;flex-wrap:wrap}
-    .osBadge{
-      display:inline-flex;align-items:center;gap:8px;
-      padding:8px 10px;border-radius:999px;
-      background:rgba(255,255,255,.10);
-      border:1px solid rgba(255,255,255,.18);
-      color:rgba(255,255,255,.95);
+      display:inline-flex; align-items:center; gap:8px;
+      padding:9px 11px; border-radius:999px;
+      border:1px solid var(--line);
+      background:rgba(11,18,32,.03);
       font-weight:900;
-      letter-spacing:.2px;
+      color:rgba(11,18,32,.86);
       user-select:none;
     }
-    .osBadge svg{width:16px;height:16px;display:block;fill:currentColor;opacity:.95}
-    .compatNote{margin-top:8px;color:rgba(255,255,255,.72);font-size:.92rem;line-height:1.35}
+    .badge strong{color:var(--text)}
 
-    .footer{margin-top:12px;color:rgba(11,18,32,.58);font-size:.85rem;text-align:center}
-    .hint{margin-top:8px;font-size:.85rem;color:rgba(11,18,32,.62)}
+    .features{
+      margin-top:16px;
+      display:grid; gap:10px;
+      grid-template-columns:1fr 1fr;
+    }
+    @media (max-width: 560px){ .features{grid-template-columns:1fr} }
+    .feat{
+      padding:12px 12px;
+      border-radius:16px;
+      border:1px solid var(--line);
+      background:linear-gradient(180deg, rgba(11,18,32,.02), rgba(11,18,32,.00));
+    }
+    .feat b{display:block; margin-bottom:4px}
+    .feat span{color:var(--muted); line-height:1.45}
+
+    /* LOGIN CARD */
+    .auth{padding:18px}
+    .authHead{display:flex; gap:12px; align-items:center}
+    .authHead h2{margin:0; font-size:1.25rem; letter-spacing:-.2px}
+    .authHead .sub{color:var(--muted); margin-top:2px; font-weight:700}
+
+    .tabs{display:flex; gap:8px; margin-top:14px}
+    .tab{
+      flex:1;
+      border-radius:14px;
+      border:1px solid var(--line);
+      padding:10px 12px;
+      background:rgba(11,18,32,.02);
+      font-weight:950;
+      color:rgba(11,18,32,.86);
+      cursor:pointer;
+    }
+    .tab.active{background:#fff; box-shadow:0 10px 26px rgba(15,23,42,.08)}
+
+    .panel{display:none; margin-top:12px}
+    .panel.active{display:block}
+
+    label{display:block; margin:10px 0 6px; color:var(--muted); font-size:.92rem; font-weight:800}
+    input{
+      width:100%;
+      padding:12px 12px;
+      border-radius:14px;
+      border:1px solid rgba(11,18,32,.16);
+      font-size:16px;
+      outline:none;
+      background:#fff;
+    }
+    input:focus{
+      border-color:rgba(37,99,235,.40);
+      box-shadow:0 0 0 4px rgba(37,99,235,.14);
+    }
+
+    .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:12px}
+    button{
+      cursor:pointer;
+      border:0;
+      border-radius:14px;
+      padding:12px 14px;
+      font-weight:950;
+      letter-spacing:.1px;
+    }
+    .btn{
+      flex:1;
+      color:#fff;
+      background:linear-gradient(135deg,var(--blue),var(--purple));
+      box-shadow:0 14px 26px rgba(37,99,235,.18);
+    }
+    .btn2{
+      flex:1;
+      background:#fff;
+      border:1px solid rgba(11,18,32,.16);
+      color:rgba(11,18,32,.92);
+    }
+    .btn:disabled,.btn2:disabled{opacity:.55; cursor:not-allowed}
+    .link{
+      background:transparent;
+      border:0;
+      padding:0;
+      color:var(--blue);
+      font-weight:950;
+      cursor:pointer;
+    }
+
+    .msg{
+      margin-top:12px;
+      border-radius:14px;
+      padding:10px 12px;
+      display:none;
+      font-weight:800;
+    }
+    .msg.ok{display:block;background:rgba(22,163,74,.10);border:1px solid rgba(22,163,74,.22);color:rgba(22,163,74,.95)}
+    .msg.err{display:block;background:rgba(239,68,68,.10);border:1px solid rgba(239,68,68,.22);color:rgba(185,28,28,.95)}
+    .hint{margin-top:10px; font-size:.9rem; color:var(--muted); line-height:1.35}
+    .fine{margin-top:10px; font-size:.84rem; color:rgba(11,18,32,.55); text-align:center; padding:10px 0 2px}
+
+    footer{
+      margin:16px 0 0;
+      text-align:center;
+      color:rgba(11,18,32,.55);
+      font-size:.88rem;
+      font-weight:750;
+    }
   </style>
 </head>
+
 <body>
   <div class="wrap">
-    <div class="heroCard hero">
-      <div class="badge">🏆 Gestion de tournois — simple, rapide, pro</div>
-
-      <h2>Crée ton tournoi en quelques clics</h2>
-      <p>
-        Planifie les matchs, saisis les scores, exporte des documents, et garde une sauvegarde de tes tournois.
-        Parfait pour écoles, clubs et événements.
-      </p>
-
-      <p style="margin-top:10px;color:rgba(255,255,255,.82);line-height:1.45">
-        Crée aussi <b>plusieurs tournois en parallèle</b> pour différentes classes ou groupes d’entraînement.
-      </p>
-
-      <div class="compatWrap">
-        <div class="compatTitle">Compatible avec</div>
-        <div class="compatBadges">
-          <span class="osBadge" title="macOS">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16.7 13.2c0-2 1.6-3 1.7-3.1-1-.1-2.1.6-2.6 1.4-.6.9-1.2 2.2-2.4 2.2-1.2 0-1.6-.8-2.9-.8-1.3 0-2.2.8-2.9 1.7C4.9 16.6 4.2 18.8 5 20c.4.7 1 1.5 1.9 1.5.9 0 1.2-.6 2.3-.6s1.4.6 2.4.6c1 0 1.6-.8 2-1.5.5-.8.7-1.6.7-1.6s-1.6-.6-1.6-2.6zM14.4 3.5c-.7.9-.6 2.2-.6 2.2s1.3 0 2-.9c.7-.8.6-2.1.6-2.1s-1.3-.1-2 .8z"/></svg>
-            Mac
-          </span>
-
-          <span class="osBadge" title="Windows">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 4.2 10.9 3v8.2H2V4.2zm0 15.6v-7.8h8.9V21L2 19.8zM12 2.9 22 1.5v9.7H12V2.9zm0 18.2v-9h10v10.4L12 21.1z"/></svg>
-            Windows
-          </span>
-
-          <span class="osBadge" title="iPhone / iPad (iOS)">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2.8C7 2.4 7.4 2 7.8 2h8.4c.4 0 .8.4.8.8v18.4c0 .4-.4.8-.8.8H7.8c-.4 0-.8-.4-.8-.8V2.8zM9 4h6v14H9V4zm3 16.9a1.1 1.1 0 1 0 0-2.2 1.1 1.1 0 0 0 0 2.2z"/></svg>
-            iOS
-          </span>
-
-          <span class="osBadge" title="Android">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.8 7.2 6.6 5.2a.7.7 0 1 1 1.2-.7l1.3 2.1c.8-.4 1.8-.6 2.9-.6s2.1.2 2.9.6l1.3-2.1a.7.7 0 1 1 1.2.7l-1.2 2c1.3.9 2.1 2.3 2.1 3.9H5.7c0-1.6.8-3 2.1-3.9zM8.2 20.8c-.7 0-1.2-.5-1.2-1.2V12h2.4v7.6c0 .7-.5 1.2-1.2 1.2zm7.6 0c-.7 0-1.2-.5-1.2-1.2V12h2.4v7.6c0 .7-.5 1.2-1.2 1.2zM12 22a1 1 0 0 1-1-1v-9h2v9a1 1 0 0 1-1 1zM9 10.5a.8.8 0 1 0 0-1.6.8.8 0 0 0 0 1.6zm6 0a.8.8 0 1 0 0-1.6.8.8 0 0 0 0 1.6z"/></svg>
-            Android
-          </span>
+    <header>
+      <div class="brand">
+        <div class="logo">
+          <img src="icons/icon-192.png" alt="">
         </div>
-
-        <div class="compatNote">Fonctionne directement dans un navigateur moderne — sans installation obligatoire.</div>
-
-        <div style="margin-top:8px;display:flex;gap:10px;flex-wrap:wrap">
-          <span class="pill">✅ Aucun téléchargement requis</span>
-          <span class="pill">✅ Recommandé : iPad / tablette / ordinateur</span>
-        </div>
-      </div>
-
-      <div style="margin-top:12px" class="pill">🎁 Essai gratuit : <span>10 minutes</span> dès la création du compte</div>
-
-      <div class="features">
-        <div class="feat"><b>📅 Organisation claire</b><span class="muted">Calendrier, terrains, rounds et suivi des résultats.</span></div>
-        <div class="feat"><b>🧾 Feuilles prêtes à imprimer</b><span class="muted">Par terrain et horaire, et aussi feuilles de match par équipe (avec horaire + terrain).</span></div>
-        <div class="feat"><b>🎾 Mode ATP automatique</b><span class="muted">Un mode conçu pour intégrer de la différenciation dans ton enseignement et tes entraînements.</span></div>
-        <div class="feat"><b>💾 Sauvegarde</b><span class="muted">Ne perdez rien : sauvegarde sur l’appareil + sauvegarde en ligne (si connecté).</span></div>
-      </div>
-
-      <div style="margin-top:12px" class="muted">
-        Astuce : l’offline est possible si la licence a été validée récemment.
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="top">
-        <div class="logo"><img src="icons/icon-192.png" alt=""></div>
         <div>
-          <h1>Connexion</h1>
-          <div class="muted">Accède à l’essai gratuit, ou active ta licence.</div>
+          <div class="brandTitle">Tournois</div>
+          <div class="topNote">Gestion de tournois — simple, rapide, pro</div>
         </div>
       </div>
+      <div class="topNote">✅ Recommandé : iPad / tablette / ordinateur • ✅ Aucun téléchargement requis • ✅ Aucune publicité</div>
+    </header>
 
-      <div class="msg" id="msg"></div>
+    <div class="grid">
+      <!-- HERO -->
+      <section class="card">
+        <div class="hero">
+          <div class="kicker">🎁 Essai gratuit : <strong>10 minutes</strong> dès la création du compte</div>
 
-      <div class="tabs" role="tablist" aria-label="Connexion ou création de compte">
-        <button class="tab active" id="tabLogin" type="button">Se connecter</button>
-        <button class="tab" id="tabSignup" type="button">Créer un compte</button>
-      </div>
+          <h1>Crée ton tournoi en quelques clics.</h1>
+          <p>
+            Planifie les matchs, saisis les scores et imprime des feuilles prêtes à l’emploi.
+            Parfait pour écoles, clubs et événements — avec la possibilité de gérer <b>plusieurs tournois en parallèle</b>.
+          </p>
 
-      <div class="panel active" id="panelLogin">
-        <label>Email</label>
-        <input id="emailLogin" type="email" autocomplete="email" placeholder="ex: prenom.nom@email.com"/>
-        <label>Mot de passe</label>
-        <input id="passwordLogin" type="password" autocomplete="current-password" placeholder="••••••••"/>
+          <div class="badges">
+            <div class="badge">🧾 <strong>Feuilles par terrain</strong> (horaire + espace score)</div>
+            <div class="badge">📄 <strong>Feuilles par équipe</strong> (horaire + terrain)</div>
+            <div class="badge">🎾 <strong>Mode ATP automatique</strong> (différenciation)</div>
+            <div class="badge">💾 <strong>Sauvegarde</strong> locale + en ligne</div>
+          </div>
 
-        <div class="row">
-          <button class="btn" id="btnLogin" disabled>Se connecter</button>
+          <div class="features">
+            <div class="feat"><b>📅 Organisation claire</b><span>Terrains, rounds, planning et classement en un coup d’œil.</span></div>
+            <div class="feat"><b>🖨️ Exports professionnels</b><span>PDF/feuilles prêtes pour arbitres et équipes.</span></div>
+            <div class="feat"><b>🔒 Accès sécurisé</b><span>Compte + licence annuelle (un appareil à la fois).</span></div>
+            <div class="feat"><b>⚡ Fluide sur tablette</b><span>Optimisé iPad/tablette/ordinateur (pas idéal sur smartphone).</span></div>
+          </div>
+
+          <div class="hint" style="margin-top:14px">
+            Conseil : si tu utilises l’app sur smartphone, l’expérience est moins confortable (écran trop petit).
+          </div>
+        </div>
+      </section>
+
+      <!-- AUTH -->
+      <aside class="card auth">
+        <div class="authHead">
+          <div class="logo" style="width:46px;height:46px;border-radius:16px">
+            <img src="icons/icon-192.png" alt="">
+          </div>
+          <div>
+            <h2>Connexion</h2>
+            <div class="sub">Accède à l’essai gratuit, ou active ta licence.</div>
+          </div>
         </div>
 
-        <div class="row" style="justify-content:space-between">
-          <button class="link" id="btnReset" type="button">Mot de passe perdu</button>
+        <div class="msg" id="msg"></div>
+
+        <div class="tabs" role="tablist" aria-label="Connexion ou création de compte">
+          <button class="tab active" id="tabLogin" type="button">Se connecter</button>
+          <button class="tab" id="tabSignup" type="button">Créer un compte</button>
         </div>
 
-        <div class="hint">Après clic, vérifie aussi les <b>spams / indésirables</b> si tu ne vois pas l’email.</div>
-      </div>
+        <div class="panel active" id="panelLogin">
+          <label>Email</label>
+          <input id="emailLogin" type="email" autocomplete="email" placeholder="ex: prenom.nom@email.com" />
+          <label>Mot de passe</label>
+          <input id="passwordLogin" type="password" autocomplete="current-password" placeholder="••••••••" />
 
-      <div class="panel" id="panelSignup">
-        <label>Email</label>
-        <input id="emailSignup" type="email" autocomplete="email" placeholder="ex: prenom.nom@email.com"/>
-        <label>Mot de passe</label>
-        <input id="passwordSignup" type="password" autocomplete="new-password" placeholder="6 caractères minimum"/>
-        <label>Confirmer le mot de passe</label>
-        <input id="passwordSignup2" type="password" autocomplete="new-password" placeholder="Répète le mot de passe"/>
+          <div class="row">
+            <button class="btn" id="btnLogin" disabled>Se connecter</button>
+          </div>
 
-        <div class="row">
-          <button class="btn2" id="btnSignup" disabled>Créer un compte</button>
+          <div class="row" style="justify-content:space-between">
+            <button class="link" id="btnReset" type="button">Mot de passe perdu</button>
+          </div>
+
+          <div class="hint">
+            Après clic, vérifie aussi les <b>spams / indésirables</b> si tu ne vois pas l’email.
+          </div>
         </div>
 
-        <div class="hint">L’essai gratuit démarre juste après la création du compte (10 minutes).</div>
-      </div>
+        <div class="panel" id="panelSignup">
+          <label>Email</label>
+          <input id="emailSignup" type="email" autocomplete="email" placeholder="ex: prenom.nom@email.com" />
+          <label>Mot de passe</label>
+          <input id="passwordSignup" type="password" autocomplete="new-password" placeholder="6 caractères minimum" />
+          <label>Confirmer le mot de passe</label>
+          <input id="passwordSignup2" type="password" autocomplete="new-password" placeholder="Répète le mot de passe" />
 
-      <div class="footer">Développé par <b>Marco Moreira-Perriard</b></div>
+          <div class="row">
+            <button class="btn2" id="btnSignup" disabled>Créer un compte</button>
+          </div>
+
+          <div class="hint">
+            L’essai gratuit démarre juste après la création du compte (10 minutes).
+          </div>
+        </div>
+
+        <div class="fine">En créant un compte, tu acceptes d’utiliser l’app sur iPad/tablette/ordinateur (smartphone non recommandé).</div>
+
+        <footer>Développé par <b>Marco Moreira-Perriard</b></footer>
+      </aside>
     </div>
   </div>
 
@@ -327,6 +440,7 @@
   </script>
 </body>
 </html>
+
 
 
 
