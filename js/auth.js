@@ -1,4 +1,11 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+import { firebaseConfig } from "./firebase-config.js";
+
+import {
+  initializeApp,
+  getApps,
+  getApp
+} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+
 import {
   getAuth,
   onAuthStateChanged,
@@ -8,12 +15,11 @@ import {
   sendEmailVerification,
   signOut
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
-import { firebaseConfig } from "./firebase-config.js";
 
-const app = initializeApp(firebaseConfig);
+const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 
-// ✅ IMPORTANT: lien de vérification vers TON site
+// ✅ IMPORTANT: lien de vérification vers ton site
 const VERIFY_URL = "https://sportswissapp.pages.dev/verify-email.html";
 const actionCodeSettings = {
   url: VERIFY_URL,
@@ -36,7 +42,6 @@ export async function login(email, password){
 
 export async function signup(email, password){
   const cred = await createUserWithEmailAndPassword(auth, email, password);
-  // ✅ envoie un email avec lien vers verify-email.html
   await sendEmailVerification(cred.user, actionCodeSettings);
   return cred.user;
 }
@@ -59,4 +64,5 @@ export async function reloadCurrentUser(){
 export async function logout(){
   return signOut(auth);
 }
+
 
