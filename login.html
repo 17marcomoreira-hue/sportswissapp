@@ -44,7 +44,6 @@
     .panel{display:none;margin-top:10px}
     .panel.active{display:block}
 
-    /* Badge lisible sur fond sombre */
     .pill{
       display:inline-flex;align-items:center;gap:8px;padding:7px 10px;border-radius:999px;
       background:rgba(255,255,255,.12);
@@ -56,21 +55,48 @@
     .features{display:grid;gap:10px;margin-top:12px}
     .feat{background:rgba(255,255,255,.72);border:1px solid rgba(11,18,32,.12);border-radius:16px;padding:12px}
     .feat b{display:block;margin-bottom:4px}
-    .hero h2{margin:6px 0 6px;font-size:1.2rem;color:#fff}
+
+    .hero h2{margin:8px 0 6px;font-size:1.2rem;color:#fff}
     .hero p{margin:0;color:rgba(255,255,255,.82);line-height:1.45}
     .heroCard{background:rgba(17,24,39,.70);border:1px solid rgba(255,255,255,.14);border-radius:18px;padding:16px;
       box-shadow:0 18px 40px rgba(0,0,0,.35)}
-    .badge{display:inline-flex;align-items:center;gap:8px;padding:7px 10px;border-radius:999px;
-      background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.16);font-weight:900}
+
+    .badge{
+      display:inline-flex;align-items:center;gap:10px;
+      padding:10px 12px;border-radius:999px;
+      background:rgba(255,255,255,.12);
+      border:1px solid rgba(255,255,255,.20);
+      font-weight:1000;
+      font-size:1.15rem;
+      line-height:1.1;
+      color:#fff;
+    }
+
+    .compatWrap{margin-top:12px}
+    .compatTitle{font-weight:900;margin-bottom:8px;color:rgba(255,255,255,.92)}
+    .compatBadges{display:flex;gap:10px;flex-wrap:wrap}
+    .osBadge{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:8px 10px;border-radius:999px;
+      background:rgba(255,255,255,.10);
+      border:1px solid rgba(255,255,255,.18);
+      color:rgba(255,255,255,.95);
+      font-weight:900;
+      letter-spacing:.2px;
+      user-select:none;
+    }
+    .osBadge svg{width:16px;height:16px;display:block;fill:currentColor;opacity:.95}
+    .compatNote{margin-top:8px;color:rgba(255,255,255,.72);font-size:.92rem;line-height:1.35}
+
     .footer{margin-top:12px;color:rgba(11,18,32,.58);font-size:.85rem;text-align:center}
     .hint{margin-top:8px;font-size:.85rem;color:rgba(11,18,32,.62)}
   </style>
 </head>
 <body>
   <div class="wrap">
-    <!-- Présentation / “pub” -->
     <div class="heroCard hero">
       <div class="badge">🏆 Gestion de tournois — simple, rapide, pro</div>
+
       <h2>Crée ton tournoi en quelques clics</h2>
       <p>
         Planifie les matchs, saisis les scores, exporte des documents, et garde une sauvegarde de tes tournois.
@@ -81,11 +107,44 @@
         Crée aussi <b>plusieurs tournois en parallèle</b> pour différentes classes ou groupes d’entraînement.
       </p>
 
+      <div class="compatWrap">
+        <div class="compatTitle">Compatible avec</div>
+        <div class="compatBadges">
+          <span class="osBadge" title="macOS">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16.7 13.2c0-2 1.6-3 1.7-3.1-1-.1-2.1.6-2.6 1.4-.6.9-1.2 2.2-2.4 2.2-1.2 0-1.6-.8-2.9-.8-1.3 0-2.2.8-2.9 1.7C4.9 16.6 4.2 18.8 5 20c.4.7 1 1.5 1.9 1.5.9 0 1.2-.6 2.3-.6s1.4.6 2.4.6c1 0 1.6-.8 2-1.5.5-.8.7-1.6.7-1.6s-1.6-.6-1.6-2.6zM14.4 3.5c-.7.9-.6 2.2-.6 2.2s1.3 0 2-.9c.7-.8.6-2.1.6-2.1s-1.3-.1-2 .8z"/></svg>
+            Mac
+          </span>
+
+          <span class="osBadge" title="Windows">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 4.2 10.9 3v8.2H2V4.2zm0 15.6v-7.8h8.9V21L2 19.8zM12 2.9 22 1.5v9.7H12V2.9zm0 18.2v-9h10v10.4L12 21.1z"/></svg>
+            Windows
+          </span>
+
+          <span class="osBadge" title="iPhone / iPad (iOS)">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2.8C7 2.4 7.4 2 7.8 2h8.4c.4 0 .8.4.8.8v18.4c0 .4-.4.8-.8.8H7.8c-.4 0-.8-.4-.8-.8V2.8zM9 4h6v14H9V4zm3 16.9a1.1 1.1 0 1 0 0-2.2 1.1 1.1 0 0 0 0 2.2z"/></svg>
+            iOS
+          </span>
+
+          <span class="osBadge" title="Android">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.8 7.2 6.6 5.2a.7.7 0 1 1 1.2-.7l1.3 2.1c.8-.4 1.8-.6 2.9-.6s2.1.2 2.9.6l1.3-2.1a.7.7 0 1 1 1.2.7l-1.2 2c1.3.9 2.1 2.3 2.1 3.9H5.7c0-1.6.8-3 2.1-3.9zM8.2 20.8c-.7 0-1.2-.5-1.2-1.2V12h2.4v7.6c0 .7-.5 1.2-1.2 1.2zm7.6 0c-.7 0-1.2-.5-1.2-1.2V12h2.4v7.6c0 .7-.5 1.2-1.2 1.2zM12 22a1 1 0 0 1-1-1v-9h2v9a1 1 0 0 1-1 1zM9 10.5a.8.8 0 1 0 0-1.6.8.8 0 0 0 0 1.6zm6 0a.8.8 0 1 0 0-1.6.8.8 0 0 0 0 1.6z"/></svg>
+            Android
+          </span>
+        </div>
+
+        <div class="compatNote">Fonctionne directement dans un navigateur moderne — sans installation obligatoire.</div>
+
+        <!-- ✅ Ajout mini “pro” -->
+        <div style="margin-top:8px;display:flex;gap:10px;flex-wrap:wrap">
+          <span class="pill">✅ Aucun téléchargement requis</span>
+          <span class="pill">✅ Fonctionne sur iPad</span>
+        </div>
+      </div>
+
       <div style="margin-top:12px" class="pill">🎁 Essai gratuit : <span>10 minutes</span> dès la création du compte</div>
 
       <div class="features">
         <div class="feat"><b>📅 Organisation claire</b><span class="muted">Calendrier, terrains, rounds et suivi des résultats.</span></div>
-        <div class="feat"><b>🧾 Feuilles arbitres par terrain</b><span class="muted">Imprime des feuilles prêtes à l’emploi pour chaque terrain et chaque horaire.</span></div>
+        <div class="feat"><b>🧾 Feuilles prêtes à imprimer</b><span class="muted">Par terrain et horaire, et aussi feuilles de match par équipe (avec horaire + terrain).</span></div>
         <div class="feat"><b>🎾 Mode ATP automatique</b><span class="muted">Un mode conçu pour intégrer de la différenciation dans ton enseignement et tes entraînements.</span></div>
         <div class="feat"><b>💾 Sauvegarde</b><span class="muted">Ne perdez rien : sauvegarde sur l’appareil + sauvegarde en ligne (si connecté).</span></div>
       </div>
@@ -95,7 +154,6 @@
       </div>
     </div>
 
-    <!-- Login / Signup -->
     <div class="card">
       <div class="top">
         <div class="logo"><img src="icons/icon-192.png" alt=""></div>
@@ -112,11 +170,9 @@
         <button class="tab" id="tabSignup" type="button">Créer un compte</button>
       </div>
 
-      <!-- Panel login -->
       <div class="panel active" id="panelLogin">
         <label>Email</label>
         <input id="emailLogin" type="email" autocomplete="email" placeholder="ex: prenom.nom@email.com"/>
-
         <label>Mot de passe</label>
         <input id="passwordLogin" type="password" autocomplete="current-password" placeholder="••••••••"/>
 
@@ -131,14 +187,11 @@
         <div class="hint">Après clic, vérifie aussi les <b>spams / indésirables</b> si tu ne vois pas l’email.</div>
       </div>
 
-      <!-- Panel signup -->
       <div class="panel" id="panelSignup">
         <label>Email</label>
         <input id="emailSignup" type="email" autocomplete="email" placeholder="ex: prenom.nom@email.com"/>
-
         <label>Mot de passe</label>
         <input id="passwordSignup" type="password" autocomplete="new-password" placeholder="6 caractères minimum"/>
-
         <label>Confirmer le mot de passe</label>
         <input id="passwordSignup2" type="password" autocomplete="new-password" placeholder="Répète le mot de passe"/>
 
@@ -262,3 +315,4 @@
   </script>
 </body>
 </html>
+
