@@ -13,6 +13,13 @@ import { firebaseConfig } from "./firebase-config.js";
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 
+// ✅ IMPORTANT: lien de vérification vers TON site
+const VERIFY_URL = "https://sportswissapp.pages.dev/verify-email.html";
+const actionCodeSettings = {
+  url: VERIFY_URL,
+  handleCodeInApp: true
+};
+
 export function waitForAuthReady(){
   return new Promise((resolve) => {
     const unsub = onAuthStateChanged(auth, (user) => {
@@ -29,7 +36,8 @@ export async function login(email, password){
 
 export async function signup(email, password){
   const cred = await createUserWithEmailAndPassword(auth, email, password);
-  await sendEmailVerification(cred.user);
+  // ✅ envoie un email avec lien vers verify-email.html
+  await sendEmailVerification(cred.user, actionCodeSettings);
   return cred.user;
 }
 
@@ -39,7 +47,7 @@ export async function resetPassword(email){
 
 export async function resendVerificationEmail(){
   if(!auth.currentUser) throw new Error("Non connecté.");
-  await sendEmailVerification(auth.currentUser);
+  await sendEmailVerification(auth.currentUser, actionCodeSettings);
 }
 
 export async function reloadCurrentUser(){
@@ -51,3 +59,4 @@ export async function reloadCurrentUser(){
 export async function logout(){
   return signOut(auth);
 }
+
