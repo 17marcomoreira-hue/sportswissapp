@@ -3,32 +3,54 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Tournoi — Application</title>
+  <title>Tournoi — App</title>
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#0b1220">
-  <link rel="apple-touch-icon" href="icons/icon-192.png">
   <style>
-    html,body{height:100%;margin:0}
-    body{background:#0b1220;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
-    .topbar{position:sticky;top:0;z-index:50;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;
-      padding:10px 12px;background:rgba(17,24,39,.86);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
-      border-bottom:1px solid rgba(255,255,255,.12);color:#fff}
-    .pill{display:inline-flex;align-items:center;gap:8px;padding:7px 10px;border-radius:999px;
-      background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.16);font-weight:800;font-size:.9rem}
-    .btn{cursor:pointer;border:0;border-radius:12px;padding:9px 12px;font-weight:900;color:#fff;
-      background:linear-gradient(135deg,#2563eb,#7c3aed)}
-    .btn.secondary{background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.16)}
-    iframe{border:0;width:100%;height:calc(100vh - 62px);background:#fff}
-    @media (max-width: 520px){ iframe{height:calc(100vh - 92px)} }
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:#0b1220;color:#fff;}
+    .topbar{
+      position:sticky;top:0;z-index:10;
+      display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between;
+      padding:10px 12px;background:rgba(11,18,32,.92);backdrop-filter: blur(10px);
+      border-bottom:1px solid rgba(255,255,255,.12);
+    }
+    .pill{
+      display:inline-flex;align-items:center;gap:8px;padding:7px 10px;border-radius:999px;
+      background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.14);font-weight:900
+    }
+    .btn{
+      cursor:pointer;border:0;border-radius:12px;padding:10px 12px;font-weight:900;
+      background:linear-gradient(135deg,#2563eb,#7c3aed);color:#fff
+    }
+    .btn.secondary{
+      background:rgba(255,255,255,.10);
+      border:1px solid rgba(255,255,255,.16);
+    }
+    .btn:disabled{opacity:.55;cursor:not-allowed}
+    iframe{width:100%;height:calc(100vh - 70px);border:0;display:block;background:#fff;}
+
+    /* Petit (i) explicatif */
+    .info{
+      display:inline-grid;place-items:center;
+      width:18px;height:18px;margin-left:6px;
+      border-radius:999px;
+      font-size:12px;font-weight:900;
+      border:1px solid rgba(255,255,255,.45);
+      color:rgba(255,255,255,.95);
+      background:rgba(255,255,255,.12);
+      cursor:help;
+      line-height:1;
+      user-select:none;
+    }
   </style>
 </head>
 <body>
   <div class="topbar">
     <div class="pill" id="status">Vérification accès…</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-      <button class="btn secondary" id="btnSync" title="Sauvegarder une copie en ligne (Firebase)">Sync Cloud</button>
-      <button class="btn secondary" id="btnDownload" title="Sauvegarder une copie locale (fichier)">Export local</button>
-      <button class="btn secondary" id="btnUpload" title="Recharger une copie locale (fichier)">Import local</button>
+      <button class="btn secondary" id="btnSync" title="Sauvegarde en ligne (Internet requis)">Sauvegarde en ligne <span class="info" aria-hidden="true">i</span></button>
+      <button class="btn secondary" id="btnDownload" title="Télécharger une sauvegarde sur cet appareil">Export local <span class="info" aria-hidden="true">i</span></button>
+      <button class="btn secondary" id="btnUpload" title="Restaurer un tournoi depuis un fichier sauvegardé">Import local <span class="info" aria-hidden="true">i</span></button>
       <button class="btn" id="btnLogout">Déconnexion</button>
       <input id="file" type="file" accept="application/json" style="display:none" />
     </div>
@@ -37,109 +59,80 @@
   <iframe id="appFrame" src="./app-inner.html"></iframe>
 
   <script type="module">
-    import { requireAccessOrRedirect } from "./js/gate.js";
-    import { logout, waitForAuthReady } from "./js/auth.js";
-    import { ensureUserProfile, computeAccess } from "./js/license.js";
-    import { cloudSaveSnapshot } from "./js/storage.js";
+    import { waitForAuthReady, logout } from "./js/auth.js";
+    import { requireAccessOrRedirect, cloudSaveSnapshot, getAllLocalStorage, downloadJson, uploadJsonToLocalStorage } from "./js/storage.js";
 
-    const status = document.getElementById("status");
+    const statusEl = document.getElementById("status");
     const btnLogout = document.getElementById("btnLogout");
     const btnSync = document.getElementById("btnSync");
     const btnDownload = document.getElementById("btnDownload");
     const btnUpload = document.getElementById("btnUpload");
     const file = document.getElementById("file");
-    const frame = document.getElementById("appFrame");
 
-    function setStatus(text){ status.textContent = text; }
-
-    function downloadJSON(filename, obj){
-      const blob = new Blob([JSON.stringify(obj, null, 2)], {type:"application/json"});
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url; a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(()=>URL.revokeObjectURL(url), 1000);
-    }
-
-    function getAllLocalStorage(){
-      const out = {};
-      for(let i=0;i<localStorage.length;i++){
-        const k = localStorage.key(i);
-        out[k] = localStorage.getItem(k);
-      }
-      return out;
-    }
-
-    function setAllLocalStorage(d){
-      for(const [k,v] of Object.entries(d||{})){
-        localStorage.setItem(k, v);
-      }
-    }
-
-    btnLogout.onclick = async ()=>{ await logout(); location.href="./login.html"; };
-
-    btnDownload.onclick = async ()=>{
+    async function init(){
       const user = await waitForAuthReady();
-      const payload = { exportedAt: Date.now(), email: user?.email||"", localStorage: getAllLocalStorage() };
-      downloadJSON("tournoi_backup_local.json", payload);
+      if(!user){ location.href="./login.html"; return; }
+
+      const ctx = await requireAccessOrRedirect();
+      if(!ctx) return;
+
+      statusEl.textContent = ctx.access?.label || "Accès OK";
+      statusEl.style.background = "rgba(34,197,94,.12)";
+      statusEl.style.border = "1px solid rgba(34,197,94,.25)";
+    }
+    init();
+
+    btnLogout.onclick = async ()=>{
+      await logout();
+      location.href="./login.html";
     };
 
-    btnUpload.onclick = ()=> file.click();
+    btnDownload.onclick = async ()=>{
+      try{
+        const ctx = await requireAccessOrRedirect();
+        if(!ctx) return;
+        const data = { savedAt: Date.now(), localStorage: getAllLocalStorage() };
+        downloadJson(data, "tournoi_backup_local.json");
+        alert("Sauvegarde locale téléchargée (fichier).");
+      }catch(e){
+        alert(e?.message || "Export local impossible");
+      }
+    };
+
+    btnUpload.onclick = async ()=>{
+      file.click();
+    };
+
     file.onchange = async ()=>{
-      const f = file.files?.[0];
-      if(!f) return;
-      const txt = await f.text();
-      const data = JSON.parse(txt);
-      if(!data?.localStorage) { alert("Fichier invalide"); return; }
-      setAllLocalStorage(data.localStorage);
-      frame.src = frame.src;
-      alert("Import OK. L'application a été rechargée.");
-      file.value="";
+      try{
+        const ctx = await requireAccessOrRedirect();
+        if(!ctx) return;
+
+        const f = file.files?.[0];
+        if(!f) return;
+
+        await uploadJsonToLocalStorage(f);
+        alert("Import local OK. Recharge la page si nécessaire.");
+      }catch(e){
+        alert(e?.message || "Import local impossible");
+      }finally{
+        file.value="";
+      }
     };
 
     btnSync.onclick = async ()=>{
       try{
-        if(!navigator.onLine) { alert("Internet requis pour Sync Cloud."); return; }
+        if(!navigator.onLine) { alert("Internet requis pour la sauvegarde en ligne."); return; }
         const ctx = await requireAccessOrRedirect();
         if(!ctx) return;
+
         const snapshot = { savedAt: Date.now(), localStorage: getAllLocalStorage() };
         await cloudSaveSnapshot(ctx.user, snapshot.localStorage);
-        alert("Sauvegarde cloud OK (snapshot).");
+        alert("Sauvegarde en ligne réussie.");
       }catch(e){
-        alert(e?.message || "Sync cloud impossible");
+        alert(e?.message || "Sauvegarde en ligne impossible");
       }
     };
-
-    (async ()=>{
-      const ctx = await requireAccessOrRedirect();
-      if(!ctx) return;
-
-      if(ctx.offline){
-        setStatus("🟡 Offline — licence validée récemment");
-        return;
-      }
-
-      const access = ctx.access;
-      if(access.mode==="license"){
-        setStatus("✅ Licence active ("+Math.floor(access.remainingSec/86400)+" j restants)");
-      }else{
-        setStatus("⏱️ Essai: "+access.remainingSec+" sec restants");
-        setInterval(async ()=>{
-          const user = await waitForAuthReady();
-          if(!user) return;
-          if(!navigator.onLine){
-            location.href="./login.html";
-            return;
-          }
-          const profile = await ensureUserProfile(user);
-          const a = computeAccess(profile);
-          if(!a.allowed){ location.href="./activate.html"; return; }
-          setStatus("⏱️ Essai: "+a.remainingSec+" sec restants");
-        }, 1000);
-      }
-    })();
   </script>
 </body>
 </html>
