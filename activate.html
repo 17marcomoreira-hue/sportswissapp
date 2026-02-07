@@ -75,6 +75,12 @@
       if(!user){
         show("err", "Session expirée : merci de te reconnecter.");
         setTimeout(goLogin, 900);
+        return;
+      }
+      if(!user.emailVerified){
+        show("err", "Email non confirmé : merci de vérifier ta boîte mail.");
+        setTimeout(()=>location.href="./verify.html", 900);
+        return;
       }
     })();
 
@@ -101,7 +107,8 @@
         if(!key) throw new Error("Entre une clé d’activation.");
 
         const res = await activateWithKey(user, key);
-        show("ok", "Activé ! Expire le " + new Date(res.expiresAt).toLocaleDateString());
+        const monthsTxt = res.months ? (" ("+res.months+" mois)") : "";
+        show("ok", "Activé" + monthsTxt + " ! Expire le " + new Date(res.expiresAt).toLocaleDateString());
         setTimeout(()=>location.href="./app.html", 700);
 
       }catch(e){

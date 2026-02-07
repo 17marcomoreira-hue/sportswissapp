@@ -3,150 +3,144 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Tournoi — Admin clés</title>
-  <link rel="manifest" href="manifest.webmanifest">
-  <meta name="theme-color" content="#0b1220">
+  <title>Admin — Sportswissapp</title>
+  <meta name="theme-color" content="#0b1220" />
   <style>
-    :root{--bg:#0b1220;--card:rgba(255,255,255,.92);--text:#0b1220;}
-    body{margin:0;min-height:100vh;display:grid;place-items:center;background:var(--bg);
-      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#fff;}
-    .card{width:min(860px,94vw);background:var(--card);color:var(--text);border-radius:18px;box-shadow:0 18px 40px rgba(0,0,0,.35);padding:16px;}
-    h1{margin:0 0 10px;font-size:1.3rem}
+    :root{--bg:#0b1220;--card:rgba(255,255,255,.92);--text:#0b1220;--muted:rgba(11,18,32,.70)}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:#fff}
+    .wrap{width:min(1250px,95vw);margin:16px auto 40px;display:grid;gap:14px}
+    .card{background:var(--card);color:var(--text);border:1px solid rgba(11,18,32,.14);border-radius:18px;box-shadow:0 18px 40px rgba(0,0,0,.35);padding:14px}
+    h1{margin:0 0 6px;font-size:1.35rem}
+    .muted{color:var(--muted);font-size:.92rem;line-height:1.35}
     .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-    input{padding:10px 12px;border-radius:12px;border:1px solid rgba(11,18,32,.18);font-size:16px}
-    button{cursor:pointer;border:0;border-radius:12px;padding:10px 14px;font-weight:800;background:linear-gradient(135deg,#2563eb,#7c3aed);color:#fff}
-    button.secondary{background:#fff;color:#111827;border:1px solid rgba(11,18,32,.18)}
-    table{width:100%;border-collapse:collapse;margin-top:12px}
-    th,td{border-bottom:1px solid rgba(11,18,32,.12);padding:10px;text-align:left;font-size:.95rem}
-    th{background:rgba(37,99,235,.08)}
-    .pill{display:inline-block;padding:3px 8px;border-radius:999px;font-size:.8rem;border:1px solid rgba(11,18,32,.16)}
-    .ok{background:rgba(34,197,94,.12);border-color:rgba(34,197,94,.25)}
-    .bad{background:rgba(239,68,68,.10);border-color:rgba(239,68,68,.25)}
-    .muted{color:rgba(11,18,32,.70);font-size:.9rem}
-    a{color:#2563eb;text-decoration:none;font-weight:800}
-    .msg{margin-top:10px;border-radius:12px;padding:10px 12px;display:none}
-    .msg.ok{display:block;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.25)}
-    .msg.err{display:block;background:rgba(239,68,68,.10);border:1px solid rgba(239,68,68,.25)}
-    textarea{width:100%;min-height:90px;border-radius:12px;border:1px solid rgba(11,18,32,.18);padding:10px;font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;}
+    input,select{padding:10px 10px;border-radius:12px;border:1px solid rgba(11,18,32,.18);font-size:14px}
+    button{cursor:pointer;border:0;border-radius:12px;padding:10px 12px;font-weight:900}
+    .btn{background:linear-gradient(135deg,#2563eb,#7c3aed);color:#fff}
+    .btn2{background:#fff;border:1px solid rgba(11,18,32,.18);color:#111827}
+    .btnDanger{background:rgba(239,68,68,.10);border:1px solid rgba(239,68,68,.25);color:#7f1d1d}
+    a{color:#2563eb;text-decoration:none;font-weight:900}
+    table{width:100%;border-collapse:collapse;background:#fff;border-radius:14px;overflow:hidden}
+    th,td{padding:10px;border-bottom:1px solid rgba(11,18,32,.10);vertical-align:top}
+    th{background:rgba(11,18,32,.04);text-align:left;white-space:nowrap}
+    .tag{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;font-weight:900;font-size:.82rem;border:1px solid rgba(11,18,32,.14);background:rgba(11,18,32,.04);white-space:nowrap}
+    .ok{background:rgba(34,197,94,.10);border-color:rgba(34,197,94,.25);color:#14532d}
+    .warn{background:rgba(245,158,11,.10);border-color:rgba(245,158,11,.25);color:#7c4a00}
+    .bad{background:rgba(239,68,68,.10);border-color:rgba(239,68,68,.25);color:#7f1d1d}
+    .small{font-size:.85rem;color:rgba(11,18,32,.70)}
+    .grid{display:grid;grid-template-columns:1.25fr .75fr;gap:14px}
+    @media (max-width: 980px){.grid{grid-template-columns:1fr}}
+    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,'Liberation Mono',monospace;font-size:.9rem}
   </style>
 </head>
 <body>
-  <div class="card">
-    <div class="row" style="justify-content:space-between">
-      <h1>Admin — clés d’activation</h1>
-      <a href="./app.html">→ Aller à l’app</a>
-    </div>
-    <div class="muted">Accès uniquement si ton email est dans <code>js/firebase-config.js</code>.</div>
-
-    <div class="msg" id="msg"></div>
-
-    <div class="row" style="margin-top:12px">
-      <input id="qty" type="number" min="1" max="200" value="10" style="width:110px" />
-      <button id="btnGen">Générer des clés</button>
-      <button id="btnRefresh" class="secondary">Rafraîchir</button>
-      <button id="btnLogout" class="secondary">Déconnexion</button>
+  <div class="wrap">
+    <div class="card">
+      <div class="row" style="justify-content:space-between">
+        <div>
+          <h1>Admin — Sportswissapp</h1>
+          <div class="muted" id="me">Chargement…</div>
+        </div>
+        <div class="row">
+          <a class="btn2" href="./app.html" style="padding:10px 12px;border-radius:12px;display:inline-flex;align-items:center">⬅ Retour app</a>
+          <button class="btn2" id="btnLogout" type="button">Déconnexion</button>
+        </div>
+      </div>
     </div>
 
-    <div style="margin-top:10px">
-      <div class="muted">Clés générées :</div>
-      <textarea id="out" readonly></textarea>
-    </div>
+    <div class="grid">
+      <div class="card">
+        <div class="row" style="justify-content:space-between">
+          <div>
+            <div style="font-weight:1000">👥 Utilisateurs</div>
+            <div class="muted">Recherche + statuts essai/licence + appareil actif</div>
+          </div>
+          <div class="row">
+            <input id="userSearch" placeholder="Rechercher email…" />
+            <button class="btn2" id="btnRefreshUsers" type="button">Rafraîchir</button>
+            <button class="btn" id="btnExportUsersCsv" type="button">Exporter CSV</button>
+          </div>
+        </div>
 
-    <table>
-      <thead><tr><th>Clé</th><th>Statut</th><th>Utilisée par</th><th>Expiration</th></tr></thead>
-      <tbody id="rows"></tbody>
-    </table>
+        <div style="margin-top:10px;overflow:auto">
+          <table>
+            <thead>
+              <tr>
+                <th>Email</th>
+                <th>Créé</th>
+                <th>Dernier accès</th>
+                <th>Email vérifié</th>
+                <th>Essai</th>
+                <th>Licence</th>
+                <th>Appareil</th>
+                <th>Assistance</th>
+              </tr>
+            </thead>
+            <tbody id="usersTbody"></tbody>
+          </table>
+        </div>
+
+        <div class="small" style="margin-top:10px">
+          “Renvoyer vérif.” programme le renvoi : l’email sera renvoyé automatiquement au prochain login de l’utilisateur.
+        </div>
+      </div>
+
+      <div class="card">
+        <div style="font-weight:1000">🔑 Clés & Licences</div>
+        <div class="muted">Génération, filtres, export CSV, licence manuelle</div>
+
+        <div class="row" style="margin-top:10px">
+          <input id="genCount" type="number" min="1" value="20" style="width:110px" />
+          <select id="genMonths">
+            <option value="12">12 mois</option>
+            <option value="6">6 mois</option>
+            <option value="3">3 mois</option>
+          </select>
+          <button class="btn" id="btnGenKeys" type="button">Générer</button>
+        </div>
+
+        <div class="row" style="margin-top:10px">
+          <select id="keyFilter">
+            <option value="all">Toutes</option>
+            <option value="available">Disponibles</option>
+            <option value="used">Utilisées</option>
+            <option value="expired">Expirées</option>
+            <option value="revoked">Révoquées</option>
+          </select>
+          <input id="keySearch" placeholder="Rechercher (clé ou email)..." style="flex:1" />
+          <button class="btn2" id="btnRefreshKeys" type="button">Rafraîchir</button>
+          <button class="btn" id="btnExportKeysCsv" type="button">Exporter CSV</button>
+        </div>
+
+        <div style="margin-top:10px;overflow:auto;max-height:420px">
+          <table>
+            <thead>
+              <tr>
+                <th>Clé</th>
+                <th>Statut</th>
+                <th>Durée</th>
+                <th>Liée à</th>
+                <th>Créée</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="keysTbody"></tbody>
+          </table>
+        </div>
+
+        <hr style="border:0;border-top:1px solid rgba(11,18,32,.12);margin:14px 0">
+
+        <div style="font-weight:1000">🧾 Licence manuelle (sans clé)</div>
+        <div class="row" style="margin-top:10px">
+          <input id="manualEmail" placeholder="Email utilisateur…" style="flex:1" />
+          <button class="btn2" id="btnGrant12" type="button">Activer 12 mois</button>
+          <button class="btn2" id="btnExtend12" type="button">Prolonger 12 mois</button>
+          <button class="btnDanger" id="btnRevoke" type="button">Révoquer</button>
+        </div>
+        <div class="small" style="margin-top:10px">Astuce : l’utilisateur doit s’être connecté au moins une fois pour apparaître dans la liste.</div>
+      </div>
+    </div>
   </div>
 
-  <script type="module">
-    import { waitForAuthReady, logout } from "./js/auth.js";
-    import { db, fns } from "./js/db.js";
-    import { ADMIN_EMAILS } from "./js/firebase-config.js";
-
-    const { collection, addDoc, getDocs } = fns;
-
-    const $ = (id)=>document.getElementById(id);
-    const msg = $("msg");
-
-    function show(type, text){
-      msg.className = "msg " + (type==="ok" ? "ok" : "err");
-      msg.textContent = text;
-    }
-
-    function makeKey(){
-      const chunk = ()=>Math.random().toString(36).toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,4).padEnd(4,'X');
-      return chunk()+"-"+chunk()+"-"+chunk();
-    }
-
-    async function requireAdmin(){
-      const user = await waitForAuthReady();
-      if(!user){ location.href="./login.html"; return null; }
-      if(!navigator.onLine){ show("err","Internet requis pour l’admin."); return null; }
-      const email = (user.email||"").toLowerCase();
-      const ok = (ADMIN_EMAILS||[]).map(x=>String(x).toLowerCase()).includes(email);
-      if(!ok){
-        show("err", "Accès refusé (pas admin).");
-        setTimeout(()=>location.href="./app.html", 800);
-        return null;
-      }
-      return user;
-    }
-
-    async function refresh(){
-      const user = await requireAdmin();
-      if(!user) return;
-
-      const snap = await getDocs(collection(db, "licenseKeys"));
-      const all = [];
-      snap.forEach(d => all.push({ id:d.id, ...d.data() }));
-      all.sort((a,b)=>(b.createdAtMs||0)-(a.createdAtMs||0));
-
-      $("rows").innerHTML = all.map(k=>{
-        const used = !!k.usedBy;
-        const exp = k.expiresAt ? new Date(k.expiresAt).toLocaleDateString() : "—";
-        return `
-          <tr>
-            <td><code>${k.key||""}</code></td>
-            <td><span class="pill ${used?'bad':'ok'}">${used?'utilisée':'disponible'}</span></td>
-            <td>${used ? (k.usedEmail||k.usedBy) : "—"}</td>
-            <td>${used ? exp : "—"}</td>
-          </tr>
-        `;
-      }).join("");
-    }
-
-    $("btnGen").onclick = async ()=>{
-      msg.style.display="none";
-      const user = await requireAdmin();
-      if(!user) return;
-
-      try{
-        const qty = Math.max(1, Math.min(200, Math.trunc(Number($("qty").value)||10)));
-        const keys = [];
-        for(let i=0;i<qty;i++){
-          const key = makeKey();
-          keys.push(key);
-          await addDoc(collection(db, "licenseKeys"), {
-            key,
-            createdAtMs: Date.now(),
-            usedBy: null,
-            usedEmail: null,
-            usedAt: null,
-            expiresAt: null
-          });
-        }
-        $("out").value = keys.join("\n");
-        show("ok", qty + " clé(s) générée(s).");
-        await refresh();
-      }catch(e){
-        show("err", e?.message || "Erreur génération");
-      }
-    };
-
-    $("btnRefresh").onclick = refresh;
-    $("btnLogout").onclick = async ()=>{ await logout(); location.href="./login.html"; };
-
-    refresh();
-  </script>
+  <script type="module" src="./js/admin.js"></script>
 </body>
 </html>
