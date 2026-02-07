@@ -1,5 +1,4 @@
 // js/storage.js — ULTRA COMPAT + Firestore-safe
-// Objectif :
 // - Import/Export local (localStorage) + téléchargement JSON
 // - Snapshots cloud (Firestore) avec nettoyage (sanitize) pour éviter UserImpl / objets non supportés
 // - Exports "compat" pour éviter les erreurs d'imports (gate/admin/license)
@@ -8,7 +7,7 @@ import { auth } from "./auth.js";
 import { db, fns } from "./db.js";
 
 const {
-  doc, getDoc, setDoc, updateDoc,
+  doc, getDoc, updateDoc,
   collection, getDocs, addDoc, query, orderBy, limit,
   serverTimestamp
 } = fns;
@@ -16,8 +15,19 @@ const {
 /* -------------------- DOWNLOAD HELPERS -------------------- */
 
 export function downloadJson(filename, data){
-  const safeName = (filename || "export.json").replace(/[^\w.\-]+/g, "_");
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json;charset=utf-8" });
+  // ✅ Supporte aussi l'appel downloadJson(data) (sans filename)
+  if (data === undefined && filename !== undefined && typeof filename === "object") {
+    data = filename;
+    filename = "export.json";
+  }
+
+  const name = String(filename ?? "export.json");
+  const safeName = name.replace(/[^\w.\-]+/g, "_");
+
+  const blob = new Blob([JSON.stringify(data ?? {}, null, 2)], {
+    type: "application/json;charset=utf-8"
+  });
+
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -29,9 +39,18 @@ export function downloadJson(filename, data){
 }
 
 export function downloadText(filename, text, mime="text/plain;charset=utf-8"){
-  const safeName = (filename || "export.txt").replace(/[^\w.\-]+/g, "_");
+  // ✅ Supporte aussi l'appel downloadText(text) (sans filename)
+  if (text === undefined && filename !== undefined && typeof filename !== "string") {
+    text = filename;
+    filename = "export.txt";
+  }
+
+  const name = String(filename ?? "export.txt");
+  const safeName = name.replace(/[^\w.\-]+/g, "_");
+
   const blob = new Blob([String(text ?? "")], { type: mime });
   const url = URL.createObjectURL(blob);
+
   const a = document.createElement("a");
   a.href = url;
   a.download = safeName;
@@ -240,6 +259,7 @@ export function exportLocalSnapshot(filename="snapshot_local.json"){
 export function importLocalSnapshot(objOrJson, { clearFirst=false } = {}){
   return uploadJsonToLocalStorage(objOrJson, { clearFirst });
 }
+
 
 
 
