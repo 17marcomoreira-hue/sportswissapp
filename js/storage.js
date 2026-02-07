@@ -1,8 +1,9 @@
-// js/storage.js — ULTRA COMPAT
-// Objectif : éviter toute erreur "doesn't provide an export named ..."
-// en exposant tous les exports attendus par app/gate/admin/license.
+// js/storage.js — ULTRA COMPAT + Firestore-safe
+// Objectif :
+// - Import/Export local (localStorage) + téléchargement JSON
+// - Snapshots cloud (Firestore) avec nettoyage (sanitize) pour éviter UserImpl / objets non supportés
+// - Exports "compat" pour éviter les erreurs d'imports (gate/admin/license)
 
-// --- dépendances cloud (snapshots) ---
 import { auth } from "./auth.js";
 import { db, fns } from "./db.js";
 
@@ -115,19 +116,77 @@ function requireUser(){
   if(!u) throw new Error("Non connecté.");
   return u;
 }
+
 function snapshotsCol(uid){
   return collection(db, "users", uid, "snapshots");
+}
+
+/**
+ * Nettoie n'importe quel objet "state" pour qu'il soit stockable dans Firestore :
+ * - supprime fonctions / undefined
+ * - convertit Date -> ISO string
+ * - évite cycles
+ * - réduit les objets "UserImpl" / user-like -> {uid,email,emailVerified}
+ * - Map/Set/TypedArray -> tableaux
+ */
+function sanitizeForFirestore(value){
+  const seen = new WeakSet();
+
+  const walk = (v) => {
+    if (v === null) return null;
+
+    const t = typeof v;
+    if (t === "string" || t === "number" || t === "boolean") return v;
+
+    if (t === "undefined" || t === "function" || t === "symbol" || t === "bigint") return null;
+
+    if (v instanceof Date) return v.toISOString();
+
+    // Firebase user-like (UserImpl)
+    if (v && typeof v === "object" && ("uid" in v) && ("email" in v || "emailVerified" in v)) {
+      return {
+        uid: v.uid ?? null,
+        email: v.email ?? null,
+        emailVerified: !!v.emailVerified
+      };
+    }
+
+    // Map / Set
+    if (v instanceof Map) return Array.from(v.entries()).map(([k,val]) => [walk(k), walk(val)]);
+    if (v instanceof Set) return Array.from(v.values()).map(walk);
+
+    // Typed arrays -> normal array
+    if (ArrayBuffer.isView(v) && !(v instanceof DataView)) return Array.from(v);
+
+    if (v && typeof v === "object") {
+      if (seen.has(v)) return null;
+      seen.add(v);
+
+      if (Array.isArray(v)) return v.map(walk);
+
+      const out = {};
+      for (const [k, val] of Object.entries(v)) out[k] = walk(val);
+      return out;
+    }
+
+    return null;
+  };
+
+  return walk(value);
 }
 
 // ✅ export attendu: cloudSaveSnapshot
 export async function cloudSaveSnapshot(data, label="Snapshot"){
   const u = requireUser();
+  const safeData = sanitizeForFirestore(data);
+
   const ref = await addDoc(snapshotsCol(u.uid), {
     label: String(label || "Snapshot"),
-    data,
+    data: safeData,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp()
   });
+
   return ref.id;
 }
 
@@ -142,7 +201,12 @@ export async function cloudListSnapshots(max=50){
   return snap.docs
     .map(d => ({ id:d.id, ...(d.data()||{}) }))
     .filter(x => !x.deleted)
-    .map(x => ({ id:x.id, label:x.label||"Snapshot", updatedAt:x.updatedAt||null, createdAt:x.createdAt||null }));
+    .map(x => ({
+      id: x.id,
+      label: x.label || "Snapshot",
+      updatedAt: x.updatedAt || null,
+      createdAt: x.createdAt || null
+    }));
 }
 
 export async function cloudLoadSnapshot(snapshotId){
@@ -161,23 +225,22 @@ export async function cloudDeleteSnapshot(snapshotId){
 
 /* -------------------- COMPAT EXPORTS (aliases) -------------------- */
 
-// Certains anciens imports attendent ces noms :
-
 // ✅ export attendu: requireAccessOrRedirect (en réalité dans gate.js)
 export async function requireAccessOrRedirect(...args){
   const mod = await import("./gate.js");
   return mod.requireAccessOrRedirect(...args);
 }
 
-// ✅ certains scripts pourraient attendre un alias "exportLocalSnapshot"
+// ✅ alias pratique : export local snapshot
 export function exportLocalSnapshot(filename="snapshot_local.json"){
   return downloadJson(filename, getAllLocalStorage());
 }
 
-// ✅ alias pratique
+// ✅ alias pratique : import local snapshot
 export function importLocalSnapshot(objOrJson, { clearFirst=false } = {}){
   return uploadJsonToLocalStorage(objOrJson, { clearFirst });
 }
+
 
 
 
