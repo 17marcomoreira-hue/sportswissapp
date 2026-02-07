@@ -1,5 +1,6 @@
 // js/storage.js
-// Import/Export local + sauvegarde "snapshot" dans Firestore (cloud)
+// Utilitaires : import/export localStorage + téléchargement + snapshots cloud (Firestore)
+// + exports "compat" attendus par d'autres fichiers (gate/admin/license)
 
 import { auth } from "./auth.js";
 import { db, fns } from "./db.js";
@@ -7,10 +8,10 @@ import { db, fns } from "./db.js";
 const {
   doc, getDoc, setDoc, updateDoc,
   collection, getDocs, addDoc, query, orderBy, limit,
-  serverTimestamp, Timestamp
+  serverTimestamp
 } = fns;
 
-/* -------------------- LOCAL -------------------- */
+/* -------------------- LOCAL: téléchargement fichiers -------------------- */
 
 export function downloadJson(filename, data){
   const safeName = (filename || "export.json").replace(/[^\w.\-]+/g, "_");
@@ -47,7 +48,7 @@ export function readJsonFile(file){
       try{
         const obj = JSON.parse(String(reader.result || ""));
         resolve(obj);
-      }catch(e){
+      }catch{
         reject(new Error("Fichier JSON invalide."));
       }
     };
@@ -73,37 +74,80 @@ export async function pickAndReadJson(){
   });
 }
 
-/* -------------------- CLOUD (Firestore) -------------------- */
+/* -------------------- LOCAL: localStorage helpers -------------------- */
+
+// ✅ Export attendu : getAllLocalStorage
+export function getAllLocalStorage(){
+  const out = {};
+  try{
+    for(let i=0; i<localStorage.length; i++){
+      const k = localStorage.key(i);
+      if(k == null) continue;
+      out[k] = localStorage.getItem(k);
+    }
+  }catch(e){
+    // localStorage indisponible (mode privé strict, etc.)
+  }
+  return out;
+}
+
+// Utile pour importer un snapshot local complet
+export function setAllLocalStorage(obj, { clearFirst=false } = {}){
+  try{
+    if(clearFirst) localStorage.clear();
+    if(!obj || typeof obj !== "object") return;
+    for(const [k,v] of Object.entries(obj)){
+      if(typeof k !== "string") continue;
+      localStorage.setItem(k, String(v ?? ""));
+    }
+  }catch(e){
+    // ignore
+  }
+}
+
+// Option: exporter uniquement une clé (si ton app stocke un gros JSON sous une clé)
+export function getLocalStorageItem(key, fallback=null){
+  try{
+    const v = localStorage.getItem(key);
+    return v == null ? fallback : v;
+  }catch{
+    return fallback;
+  }
+}
+
+export function setLocalStorageItem(key, value){
+  try{ localStorage.setItem(key, String(value ?? "")); }catch{}
+}
+
+/* -------------------- CLOUD: snapshots Firestore -------------------- */
 /**
- * Stockage : users/{uid}/snapshots/{autoId}
- * Chaque snapshot contient :
- * - label (nom lisible)
- * - data (ton tournoi)
- * - createdAt / updatedAt
+ * Chemin: users/{uid}/snapshots/{autoId}
+ * - label: nom lisible
+ * - data : objet tournoi (ou snapshot localStorage)
  */
+
 function requireUser(){
   const u = auth.currentUser;
   if(!u) throw new Error("Non connecté.");
   return u;
 }
-
 function snapshotsColRef(uid){
   return collection(db, "users", uid, "snapshots");
 }
 
-// ✅ attendu par ton app
+// ✅ Export attendu : cloudSaveSnapshot (ton app l’importe)
 export async function cloudSaveSnapshot(data, label="Snapshot"){
   const u = requireUser();
   const col = snapshotsColRef(u.uid);
 
-  const docRef = await addDoc(col, {
+  const ref = await addDoc(col, {
     label: String(label || "Snapshot"),
     data,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp()
   });
 
-  return docRef.id;
+  return ref.id;
 }
 
 export async function cloudListSnapshots(max=50){
@@ -112,15 +156,15 @@ export async function cloudListSnapshots(max=50){
   const q = query(col, orderBy("updatedAt","desc"), limit(Math.max(1, Math.min(200, max))));
   const snap = await getDocs(q);
 
-  return snap.docs.map(d => {
-    const v = d.data() || {};
-    return {
-      id: d.id,
-      label: v.label || "Snapshot",
-      updatedAt: v.updatedAt || null,
-      createdAt: v.createdAt || null
-    };
-  });
+  return snap.docs
+    .map(d => ({ id: d.id, ...(d.data()||{}) }))
+    .filter(x => !x.deleted)
+    .map(x => ({
+      id: x.id,
+      label: x.label || "Snapshot",
+      updatedAt: x.updatedAt || null,
+      createdAt: x.createdAt || null
+    }));
 }
 
 export async function cloudLoadSnapshot(snapshotId){
@@ -137,16 +181,17 @@ export async function cloudDeleteSnapshot(snapshotId){
   const u = requireUser();
   if(!snapshotId) throw new Error("Snapshot ID manquant.");
   const ref = doc(db, "users", u.uid, "snapshots", snapshotId);
-  // deleteDoc n'est pas dans db.js => on fait update "deleted" simple (soft delete)
   await updateDoc(ref, { deleted:true, updatedAt: serverTimestamp() });
 }
-// ------------------------------------------------------------
-// Compat : certains fichiers importaient requireAccessOrRedirect depuis storage.js
+
+/* -------------------- COMPAT exports (pour éviter les imports cassés) -------------------- */
+
+// ✅ Certains fichiers importaient requireAccessOrRedirect depuis storage.js.
 // On le ré-expose ici en déléguant à gate.js.
-// ------------------------------------------------------------
 export async function requireAccessOrRedirect(...args){
   const mod = await import("./gate.js");
   return mod.requireAccessOrRedirect(...args);
 }
+
 
 
