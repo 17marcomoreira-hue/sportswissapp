@@ -29,8 +29,8 @@
     .btn:disabled{opacity:.55;cursor:not-allowed}
     iframe{width:100%;height:calc(100vh - 70px);border:0;display:block;background:#fff;}
 
-    /* Petit (i) explicatif */
-    .info{
+    /* Petit (i) explicatif : clic (pas hover) */
+    .infoBtn{
       display:inline-grid;place-items:center;
       width:18px;height:18px;margin-left:6px;
       border-radius:999px;
@@ -38,7 +38,7 @@
       border:1px solid rgba(255,255,255,.45);
       color:rgba(255,255,255,.95);
       background:rgba(255,255,255,.12);
-      cursor:help;
+      cursor:pointer;
       line-height:1;
       user-select:none;
     }
@@ -48,11 +48,29 @@
   <div class="topbar">
     <div class="pill" id="status">Vérification accès…</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-      <button class="btn secondary" id="btnSync" title="Sauvegarde en ligne (Internet requis)">Sauvegarde en ligne <span class="info" aria-hidden="true">i</span></button>
-      <button class="btn secondary" id="btnDownload" title="Télécharger une sauvegarde sur cet appareil">Export local <span class="info" aria-hidden="true">i</span></button>
-      <button class="btn secondary" id="btnUpload" title="Restaurer un tournoi depuis un fichier sauvegardé">Import local <span class="info" aria-hidden="true">i</span></button>
+      <button class="btn secondary" id="btnSync">
+        Sauvegarde en ligne
+        <button class="infoBtn" type="button"
+          data-help="Sauvegarde en ligne : enregistre une copie de ton tournoi sur ton compte (Internet requis)."
+          aria-label="Aide Sauvegarde en ligne">i</button>
+      </button>
+
+      <button class="btn secondary" id="btnDownload">
+        Export local
+        <button class="infoBtn" type="button"
+          data-help="Export local : télécharge un fichier .json du tournoi. Tu pourras le réimporter plus tard."
+          aria-label="Aide Export local">i</button>
+      </button>
+
+      <button class="btn secondary" id="btnUpload">
+        Import local
+        <button class="infoBtn" type="button"
+          data-help="Import local : charge un fichier .json exporté précédemment pour reprendre un tournoi."
+          aria-label="Aide Import local">i</button>
+      </button>
+
       <button class="btn" id="btnLogout">Déconnexion</button>
-      <input id="file" type="file" accept="application/json" style="display:none" />
+      <input id="file" type="file" accept="application/json,.json" style="display:none" />
     </div>
   </div>
 
@@ -60,7 +78,14 @@
 
   <script type="module">
     import { waitForAuthReady, logout } from "./js/auth.js";
-    import { requireAccessOrRedirect, cloudSaveSnapshot, getAllLocalStorage, downloadJson, uploadJsonToLocalStorage } from "./js/storage.js";
+    import {
+      requireAccessOrRedirect,
+      cloudSaveSnapshot,
+      getAllLocalStorage,
+      downloadJson,
+      readJsonFile,
+      uploadJsonToLocalStorage
+    } from "./js/storage.js";
 
     const statusEl = document.getElementById("status");
     const btnLogout = document.getElementById("btnLogout");
@@ -76,7 +101,8 @@
       const ctx = await requireAccessOrRedirect();
       if(!ctx) return;
 
-      statusEl.textContent = ctx.access?.label || "Accès OK";
+      // ✅ Affiche licence/essai restant si gate.js fournit statusText
+      statusEl.textContent = ctx.access?.statusText || ctx.access?.label || "Accès OK";
       statusEl.style.background = "rgba(34,197,94,.12)";
       statusEl.style.border = "1px solid rgba(34,197,94,.25)";
     }
@@ -91,8 +117,12 @@
       try{
         const ctx = await requireAccessOrRedirect();
         if(!ctx) return;
+
         const data = { savedAt: Date.now(), localStorage: getAllLocalStorage() };
-        downloadJson(data, "tournoi_backup_local.json");
+
+        // ✅ ordre correct : (filename, data)
+        downloadJson("tournoi_backup_local.json", data);
+
         alert("Sauvegarde locale téléchargée (fichier).");
       }catch(e){
         alert(e?.message || "Export local impossible");
@@ -111,7 +141,12 @@
         const f = file.files?.[0];
         if(!f) return;
 
-        await uploadJsonToLocalStorage(f);
+        // ✅ le fichier est un File => on le lit puis on injecte l'objet
+        const obj = await readJsonFile(f);
+        // Si ton JSON a la forme {localStorage:{...}}, on restaure localStorage
+        const payload = obj?.localStorage ? obj.localStorage : obj;
+        await uploadJsonToLocalStorage(payload, { clearFirst:false });
+
         alert("Import local OK. Recharge la page si nécessaire.");
       }catch(e){
         alert(e?.message || "Import local impossible");
@@ -123,16 +158,70 @@
     btnSync.onclick = async ()=>{
       try{
         if(!navigator.onLine) { alert("Internet requis pour la sauvegarde en ligne."); return; }
+
         const ctx = await requireAccessOrRedirect();
         if(!ctx) return;
 
         const snapshot = { savedAt: Date.now(), localStorage: getAllLocalStorage() };
-        await cloudSaveSnapshot(ctx.user, snapshot.localStorage);
+
+        // ✅ On sauvegarde le snapshot (pas ctx.user)
+        await cloudSaveSnapshot(snapshot, "Tournoi");
+
         alert("Sauvegarde en ligne réussie.");
       }catch(e){
         alert(e?.message || "Sauvegarde en ligne impossible");
       }
     };
   </script>
+
+  <!-- ✅ Popover d'aide au clic (iPad/tablette/PC) -->
+  <script>
+    (function () {
+      const pop = document.createElement("div");
+      pop.id = "helpPop";
+      Object.assign(pop.style, {
+        position: "fixed",
+        maxWidth: "340px",
+        background: "rgba(255,255,255,0.96)",
+        color: "#0b1220",
+        border: "1px solid rgba(11,18,32,.15)",
+        borderRadius: "12px",
+        padding: "10px 12px",
+        boxShadow: "0 12px 30px rgba(0,0,0,.25)",
+        zIndex: "9999",
+        display: "none",
+        fontSize: "14px",
+        lineHeight: "1.35"
+      });
+      document.body.appendChild(pop);
+
+      const hide = ()=>{ pop.style.display = "none"; };
+
+      document.addEventListener("click", (e) => {
+        const btn = e.target.closest(".infoBtn");
+        if (!btn) { hide(); return; }
+
+        const text = btn.getAttribute("data-help") || "Aide indisponible.";
+        pop.textContent = text;
+
+        const r = btn.getBoundingClientRect();
+        const margin = 10;
+
+        let top = r.bottom + margin;
+        let left = Math.min(window.innerWidth - 360, Math.max(margin, r.left - 10));
+
+        if (top + 140 > window.innerHeight) top = Math.max(margin, r.top - 140);
+
+        pop.style.top = `${Math.round(top)}px`;
+        pop.style.left = `${Math.round(left)}px`;
+        pop.style.display = "block";
+        e.stopPropagation();
+      });
+
+      window.addEventListener("scroll", hide, { passive: true });
+      window.addEventListener("resize", hide);
+    })();
+  </script>
 </body>
 </html>
+
