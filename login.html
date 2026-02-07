@@ -267,6 +267,13 @@
         show("err","Connexion internet requise pour la première connexion.");
         return;
       }
+
+      // ✅ BLOQUE tant que l’email n’est pas vérifié
+      if(!user.emailVerified){
+        location.href = "./verify.html";
+        return;
+      }
+
       await enforceSingleDevice(user);
       const profile = await ensureUserProfile(user);
       const access = computeAccess(profile);
@@ -291,10 +298,16 @@
         const email = emailSignup.value.trim();
         const p1 = passwordSignup.value;
         const p2 = passwordSignup2.value;
+
         if(p1.length < 6) throw new Error("Mot de passe : 6 caractères minimum");
         if(p1 !== p2) throw new Error("Les mots de passe ne correspondent pas.");
-        const user = await signup(email, p1);
-        await afterAuth(user);
+
+        await signup(email, p1);
+
+        // ✅ Compte créé + email de vérification envoyé -> on force le passage par verify.html
+        show("ok","Compte créé. Vérifie ton email (spams/indésirables) pour démarrer l’essai.");
+        setTimeout(()=>location.href="./verify.html", 600);
+
       }catch(e){
         show("err", e?.message || "Erreur de création de compte");
       }
@@ -314,5 +327,6 @@
   </script>
 </body>
 </html>
+
 
 
