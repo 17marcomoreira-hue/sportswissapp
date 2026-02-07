@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Debug Sportswissapp</title>
+  <style>
+    body{font-family:system-ui,Arial;margin:16px}
+    pre{background:#111;color:#0f0;padding:12px;border-radius:10px;overflow:auto}
+  </style>
+</head>
+<body>
+  <h1>Debug</h1>
+  <p>Ouvre cette page, puis copie-colle le bloc ci-dessous dans le chat.</p>
+  <pre id="out">Chargement…</pre>
+
+  <script type="module">
+    const out = document.getElementById("out");
+    const log = [];
+    const push = (k,v)=>log.push(`${k}: ${v}`);
+
+    try{
+      push("location", location.href);
+      push("online", navigator.onLine);
+      push("ua", navigator.userAgent);
+
+      const files = [
+        "./js/firebase-config.js",
+        "./js/auth.js",
+        "./js/db.js",
+        "./js/license.js",
+        "./js/gate.js",
+        "./js/storage.js",
+        "./js/device.js",
+        "./js/admin.js",
+        "./sw.js",
+        "./app.html",
+        "./login.html",
+        "./activate.html",
+        "./admin.html",
+        "./verify.html",
+        "./verify-email.html"
+      ];
+
+      for(const f of files){
+        const r = await fetch(f, {cache:"no-store"});
+        push(f, `${r.status} ${r.ok ? "OK":"FAIL"}`);
+      }
+
+      try{
+        await import("./js/auth.js");
+        push("import auth.js", "OK");
+      }catch(e){
+        push("import auth.js", "ERROR -> " + (e?.message || e));
+      }
+
+      try{
+        await import("./js/license.js");
+        push("import license.js", "OK");
+      }catch(e){
+        push("import license.js", "ERROR -> " + (e?.message || e));
+      }
+
+      try{
+        await import("./js/admin.js");
+        push("import admin.js", "OK");
+      }catch(e){
+        push("import admin.js", "ERROR -> " + (e?.message || e));
+      }
+
+      out.textContent = log.join("\n");
+    }catch(e){
+      out.textContent = "Erreur debug: " + (e?.message || e);
+    }
+  </script>
+</body>
+</html>
