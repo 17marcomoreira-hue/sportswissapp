@@ -140,5 +140,13 @@ export async function cloudDeleteSnapshot(snapshotId){
   // deleteDoc n'est pas dans db.js => on fait update "deleted" simple (soft delete)
   await updateDoc(ref, { deleted:true, updatedAt: serverTimestamp() });
 }
+// ------------------------------------------------------------
+// Compat : certains fichiers importaient requireAccessOrRedirect depuis storage.js
+// On le ré-expose ici en déléguant à gate.js.
+// ------------------------------------------------------------
+export async function requireAccessOrRedirect(...args){
+  const mod = await import("./gate.js");
+  return mod.requireAccessOrRedirect(...args);
+}
 
 
