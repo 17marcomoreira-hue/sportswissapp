@@ -3,89 +3,190 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Installer l’application Tournoi</title>
+  <title>Installer l’app — Tutoriel</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#0b1220">
+
   <style>
     :root{
-      --bg:#0b1220; --card:#ffffff; --text:#0b1220; --muted:rgba(11,18,32,.72);
-      --border:rgba(11,18,32,.14); --accent:#1976d2;
+      --bg:#0b1220;
+      --card:rgba(255,255,255,.92);
+      --text:#0b1220;
+      --muted:rgba(11,18,32,.70);
+      --border:rgba(11,18,32,.14);
     }
-    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:linear-gradient(180deg,var(--bg),#0f1a33 45%,#0b1220);color:#fff;}
-    .wrap{max-width:980px;margin:0 auto;padding:18px;}
-    header{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;padding:8px 0 14px;}
-    h1{margin:0;font-size:26px;line-height:1.15;}
-    .sub{color:rgba(255,255,255,.78);font-size:14px;margin-top:6px;}
-    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;}
-    .card{background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:16px;padding:14px;box-shadow:0 10px 24px rgba(0,0,0,.22);}
-    .card h2{margin:0 0 8px;font-size:16px;}
-    ol{margin:8px 0 0 18px;padding:0;}
-    li{margin:6px 0;color:rgba(11,18,32,.88);}
-    .tip{margin-top:10px;padding:10px 12px;border-radius:12px;background:rgba(25,118,210,.12);border:1px solid rgba(25,118,210,.25);color:rgba(11,18,32,.92);}
-    .tip b{color:var(--text);}
-    .footer{margin-top:14px;color:rgba(255,255,255,.72);font-size:12px;}
-    a.btn{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);
-      color:#fff;text-decoration:none;border-radius:12px;padding:10px 12px;}
-    a.btn:hover{background:rgba(255,255,255,.16);}
-    code{background:rgba(11,18,32,.07);padding:2px 6px;border-radius:8px;border:1px solid rgba(11,18,32,.10);}
+    body{
+      margin:0; min-height:100vh; display:grid; place-items:center;
+      background:
+        radial-gradient(900px 700px at 15% 0%, rgba(37,99,235,.18), transparent 55%),
+        radial-gradient(900px 700px at 100% 15%, rgba(34,197,94,.12), transparent 55%),
+        radial-gradient(900px 700px at 55% 110%, rgba(236,72,153,.10), transparent 60%),
+        var(--bg);
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      color:#fff;
+    }
+    .wrap{
+      width:min(920px,94vw);
+      display:grid;
+      gap:14px;
+      grid-template-columns: 1fr;
+    }
+    .card{
+      background:var(--card);
+      color:var(--text);
+      border:1px solid var(--border);
+      border-radius:18px;
+      box-shadow:0 18px 40px rgba(0,0,0,.35);
+      padding:16px;
+    }
+    h1{margin:6px 0 10px;font-size:1.45rem;}
+    h2{margin:16px 0 8px;font-size:1.12rem;}
+    p{margin:8px 0; line-height:1.45;}
+    .muted{color:var(--muted);}
+    .top{
+      display:flex; gap:12px; align-items:center; justify-content:space-between; flex-wrap:wrap;
+    }
+    .badge{
+      display:inline-flex;align-items:center;gap:8px;padding:7px 10px;border-radius:999px;
+      background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.16);font-weight:900;
+      color:#fff;
+    }
+    .btnRow{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+    .btn{
+      cursor:pointer; border:0; border-radius:12px; padding:11px 14px; font-weight:900;
+      background:linear-gradient(135deg,#2563eb,#7c3aed); color:#fff;
+      text-decoration:none; display:inline-flex; align-items:center; gap:8px;
+    }
+    .btn.secondary{
+      background:rgba(255,255,255,.10);
+      border:1px solid rgba(255,255,255,.18);
+    }
+    .steps{
+      display:grid; gap:10px; margin-top:10px;
+    }
+    .step{
+      background:rgba(255,255,255,.75);
+      border:1px solid rgba(11,18,32,.10);
+      border-radius:16px;
+      padding:12px;
+    }
+    .step b{display:block;margin-bottom:6px}
+    .kbd{
+      font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace;
+      background:rgba(11,18,32,.06);
+      border:1px solid rgba(11,18,32,.12);
+      border-radius:8px;
+      padding:2px 6px;
+      font-size:.9rem;
+    }
+    .warn{
+      background:rgba(245,158,11,.12);
+      border:1px solid rgba(245,158,11,.25);
+      border-radius:14px;
+      padding:10px 12px;
+      color:#7c4a00;
+      margin-top:10px;
+    }
+    .ok{
+      background:rgba(34,197,94,.12);
+      border:1px solid rgba(34,197,94,.25);
+      border-radius:14px;
+      padding:10px 12px;
+      color:#0f5132;
+      margin-top:10px;
+    }
+    .footer{
+      text-align:center;
+      color:rgba(255,255,255,.70);
+      font-size:.9rem;
+      margin-top:6px;
+    }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <header>
-      <div>
-        <h1>Installer l’application Tournoi</h1>
-        <div class="sub">Une fois installée, l’app s’ouvre en plein écran et vos tournois restent enregistrés sur <b>cet appareil</b>.</div>
+    <div class="top">
+      <div class="badge">📲 Installer l’app sur votre appareil</div>
+      <!-- ✅ IMPORTANT : retour vers app.html (et pas index.html) -->
+      <div class="btnRow" style="margin-top:0">
+        <a class="btn secondary" href="./app.html">⬅ Retour accueil</a>
+        <a class="btn" href="./login.html">🔑 Connexion</a>
       </div>
-      <a class="btn" href="./index.html">⬅ Retour à l’accueil</a>
-    </header>
-
-    <div class="grid">
-      <section class="card">
-        <h2>Mac (Chrome / Edge)</h2>
-        <ol>
-          <li>Ouvrez l’app dans <b>Chrome</b> (ou Edge).</li>
-          <li>Cliquez l’icône <b>Installer</b> dans la barre d’adresse <span aria-hidden="true">⬇️</span> (ou menu <b>⋯</b> → <b>Installer l’application</b>).</li>
-          <li>Lancez ensuite l’app depuis le <b>Dock</b> ou le <b>Launchpad</b>.</li>
-        </ol>
-        <div class="tip"><b>Conseil :</b> gardez le même navigateur et évitez la navigation privée pour conserver les tournois.</div>
-      </section>
-
-      <section class="card">
-        <h2>PC (Windows – Chrome / Edge)</h2>
-        <ol>
-          <li>Ouvrez l’app dans <b>Chrome</b> (ou Edge).</li>
-          <li>Cliquez <b>Installer</b> (icône +) dans la barre d’adresse ou menu <b>⋯</b> → <b>Installer</b>.</li>
-          <li>Ouvrez l’app depuis le <b>menu Démarrer</b> ou le raccourci créé.</li>
-        </ol>
-        <div class="tip"><b>Important :</b> ne supprimez pas les “données du site” si vous souhaitez garder les tournois.</div>
-      </section>
-
-      <section class="card">
-        <h2>Android (Chrome)</h2>
-        <ol>
-          <li>Ouvrez l’app dans <b>Chrome</b>.</li>
-          <li>Appuyez sur le menu <b>⋮</b> (en haut à droite).</li>
-          <li>Sélectionnez <b>Installer l’application</b> ou <b>Ajouter à l’écran d’accueil</b>.</li>
-          <li>Lancez l’app depuis l’icône sur l’écran d’accueil.</li>
-        </ol>
-        <div class="tip"><b>Astuce :</b> si “Installer” n’apparaît pas, rechargez la page et réessayez.</div>
-      </section>
-
-      <section class="card">
-        <h2>iPhone / iPad (Safari)</h2>
-        <ol>
-          <li>Ouvrez l’app dans <b>Safari</b> (pas Chrome).</li>
-          <li>Appuyez sur <b>Partager</b> (carré avec flèche).</li>
-          <li>Choisissez <b>Sur l’écran d’accueil</b>.</li>
-          <li>Validez avec <b>Ajouter</b>, puis lancez l’app depuis l’icône.</li>
-        </ol>
-        <div class="tip"><b>Note :</b> si l’option n’apparaît pas, ouvrez le lien directement dans Safari (pas depuis une autre app).</div>
-      </section>
     </div>
 
-    <div class="footer">
-      <p><b>Conservation des tournois :</b> vos tournois sont enregistrés localement (sur l’appareil + navigateur). Ils restent disponibles d’une leçon à l’autre tant que vous ne supprimez pas les données du site et que vous n’utilisez pas la navigation privée.</p>
-      <p>Développé par Marco Moreira‑Perriard</p>
+    <div class="card">
+      <h1>Tutoriel d’installation</h1>
+      <p class="muted">
+        Installer l’app permet de l’utiliser plus facilement (raccourci sur l’écran d’accueil, plein écran, accès rapide).
+        L’installation dépend de l’appareil et du navigateur.
+      </p>
+
+      <div class="warn">
+        <b>Important</b><br>
+        L’utilisation hors ligne est possible uniquement si votre licence a été validée récemment.
+        Pour une première installation, connectez-vous au moins une fois avec Internet.
+      </div>
+
+      <h2>✅ iPhone / iPad (Safari)</h2>
+      <div class="steps">
+        <div class="step">
+          <b>1) Ouvrir le site dans Safari</b>
+          <p class="muted">L’installation fonctionne le mieux avec Safari sur iOS/iPadOS.</p>
+        </div>
+        <div class="step">
+          <b>2) Appuyer sur “Partager”</b>
+          <p class="muted">C’est l’icône carré avec une flèche vers le haut (barre du bas).</p>
+        </div>
+        <div class="step">
+          <b>3) Choisir “Sur l’écran d’accueil”</b>
+          <p class="muted">Faites défiler si nécessaire, puis sélectionnez <span class="kbd">Sur l’écran d’accueil</span>.</p>
+        </div>
+        <div class="step">
+          <b>4) Valider</b>
+          <p class="muted">Appuyez sur <span class="kbd">Ajouter</span>. L’icône apparaît sur votre écran d’accueil.</p>
+        </div>
+      </div>
+
+      <h2>✅ Android (Chrome)</h2>
+      <div class="steps">
+        <div class="step">
+          <b>1) Ouvrir le site dans Chrome</b>
+          <p class="muted">L’installation PWA fonctionne très bien avec Chrome sur Android.</p>
+        </div>
+        <div class="step">
+          <b>2) Menu ⋮</b>
+          <p class="muted">Appuyez sur les 3 points en haut à droite.</p>
+        </div>
+        <div class="step">
+          <b>3) “Installer l’application”</b>
+          <p class="muted">Ou parfois <span class="kbd">Ajouter à l’écran d’accueil</span>.</p>
+        </div>
+      </div>
+
+      <h2>✅ Ordinateur (Chrome / Edge)</h2>
+      <div class="steps">
+        <div class="step">
+          <b>1) Ouvrir le site</b>
+          <p class="muted">Sur Chrome ou Edge.</p>
+        </div>
+        <div class="step">
+          <b>2) Cliquer sur l’icône “Installer”</b>
+          <p class="muted">Dans la barre d’adresse, une petite icône d’installation peut apparaître.</p>
+        </div>
+        <div class="step">
+          <b>3) Valider</b>
+          <p class="muted">L’app s’ouvre ensuite comme une application “classique”.</p>
+        </div>
+      </div>
+
+      <div class="ok">
+        <b>Conseil</b><br>
+        Après l’installation, connectez-vous, puis faites une <b>Sauvegarde en ligne</b> en fin de séance pour éviter toute perte.
+      </div>
     </div>
+
+    <div class="footer">Développé par <b>Marco Moreira-Perriard</b></div>
   </div>
 </body>
 </html>
+
