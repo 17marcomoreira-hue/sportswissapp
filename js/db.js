@@ -10,7 +10,7 @@ import {
   getFirestore,
   doc, getDoc, setDoc, updateDoc,
   collection, query, where, orderBy, limit,
-  getDocs, addDoc,
+  getDocs,
   serverTimestamp,
   Timestamp
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
@@ -22,8 +22,7 @@ export const db = getFirestore(app);
 export const fns = {
   doc, getDoc, setDoc, updateDoc,
   collection, query, where, orderBy, limit,
-  getDocs, addDoc,
+  getDocs,
   serverTimestamp,
   Timestamp
 };
-
