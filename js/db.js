@@ -8,7 +8,7 @@ import {
 
 import {
   getFirestore,
-  doc, getDoc, setDoc, updateDoc,
+  doc, getDoc, setDoc, addDoc, updateDoc,
   collection, query, where, orderBy, limit,
   getDocs,
   serverTimestamp,
@@ -20,9 +20,10 @@ const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 
 export const fns = {
-  doc, getDoc, setDoc, updateDoc,
+  doc, getDoc, setDoc, addDoc, updateDoc,
   collection, query, where, orderBy, limit,
   getDocs,
   serverTimestamp,
   Timestamp
 };
+
