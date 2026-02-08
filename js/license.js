@@ -14,11 +14,8 @@ const OFFLINE_GRACE_MS = OFFLINE_GRACE_DAYS * 24 * 60 * 60 * 1000;
 const ACCESS_CACHE_KEY = "TOURNOI_ACCESS_CACHE_V1";
 
 function loadCache() {
-  try {
-    return JSON.parse(localStorage.getItem(ACCESS_CACHE_KEY) || "null");
-  } catch {
-    return null;
-  }
+  try { return JSON.parse(localStorage.getItem(ACCESS_CACHE_KEY) || "null"); }
+  catch { return null; }
 }
 function saveCache(obj) {
   localStorage.setItem(ACCESS_CACHE_KEY, JSON.stringify(obj));
@@ -43,19 +40,15 @@ export function getOfflineDecision() {
   const expiresAt = Number(c.expiresAt || 0);
 
   if (!lastOk) return { allowed: false, reason: "Validation absente." };
-  if (now - lastOk > OFFLINE_GRACE_MS)
-    return {
-      allowed: false,
-      reason: `Validation trop ancienne (> ${OFFLINE_GRACE_DAYS} jours).`,
-    };
+  if (now - lastOk > OFFLINE_GRACE_MS) {
+    return { allowed: false, reason: `Validation trop ancienne (> ${OFFLINE_GRACE_DAYS} jours).` };
+  }
   if (!expiresAt || expiresAt <= now) return { allowed: false, reason: "Licence expirée." };
 
   return { allowed: true, reason: "OK (offline grace)" };
 }
 
-// --------------------------
-// Profil user Firestore
-// --------------------------
+// ✅ Optimisé: évite les re-lectures getDoc inutiles
 export async function ensureUserProfile(user) {
   if (!user || !user.uid) throw new Error("Utilisateur non connecté.");
 
@@ -64,32 +57,35 @@ export async function ensureUserProfile(user) {
 
   const basePatch = {
     uid: user.uid,
-    email: user.email || "",
+    email: (user.email || "").toLowerCase(),
     emailVerified: !!user.emailVerified,
     lastLoginAt: serverTimestamp(),
   };
 
+  // Création (0 read en plus)
   if (!snap.exists()) {
     const now = Date.now();
-    await setDoc(
-      ref,
-      {
-        ...basePatch,
-        createdAt: serverTimestamp(),
-        trialStartedAt: now,
-        trialSeconds: TRIAL_SECONDS_DEFAULT,
-        license: { active: false, expiresAt: null, key: null, status: "none" },
-        activeDeviceId: null,
-        lastDeviceAt: null,
-        lastValidatedAt: null,
-        adminResendVerify: false,
-      },
-      { merge: true }
-    );
-    return (await getDoc(ref)).data();
+    const created = {
+      ...basePatch,
+      createdAt: serverTimestamp(),
+      trialStartedAt: now,
+      trialSeconds: TRIAL_SECONDS_DEFAULT,
+      license: { active: false, expiresAt: null, key: null, status: "none" },
+      activeDeviceId: null,
+      lastDeviceAt: null,
+      lastValidatedAt: null,
+      adminResendVerify: false,
+    };
+    await setDoc(ref, created, { merge: true });
+
+    return {
+      ...created,
+      createdAt: now,
+      lastLoginAt: now,
+    };
   }
 
-  const data = snap.data();
+  const data = snap.data() || {};
   const patch = { ...basePatch };
 
   if (!data.trialStartedAt) patch.trialStartedAt = Date.now();
@@ -98,8 +94,10 @@ export async function ensureUserProfile(user) {
   if (!("lastValidatedAt" in data)) patch.lastValidatedAt = null;
   if (!("adminResendVerify" in data)) patch.adminResendVerify = false;
 
+  // On met à jour lastLoginAt/emailVerified à chaque login (mais sans re-getDoc)
   await updateDoc(ref, patch);
-  return (await getDoc(ref)).data();
+
+  return { ...data, ...patch };
 }
 
 export function computeAccess(profile) {
@@ -124,8 +122,6 @@ export function computeAccess(profile) {
 }
 
 export async function markValidatedOnline(user, profile) {
-  if (!user || !user.uid) return;
-
   const now = Date.now();
   try {
     await updateDoc(doc(db, "users", user.uid), { lastValidatedAt: now });
@@ -136,24 +132,11 @@ export async function markValidatedOnline(user, profile) {
   saveCache({ lastValidatedAt: now, expiresAt });
 }
 
-// --------------------------
-// Single-device: NE DOIT PAS CRASHER si user absent
-// --------------------------
 export async function enforceSingleDevice(user) {
-  // ✅ garde-fou : si gate.js appelle trop tôt
-  if (!user || !user.uid) {
-    return { ok: false, reason: "User not signed in" };
-  }
-
   const deviceId = getOrCreateDeviceId();
   const ref = doc(db, "users", user.uid);
-
   const snap = await getDoc(ref);
-
-  // Profil pas encore créé => on ne bloque pas ici
-  if (!snap.exists()) {
-    return { ok: true, deviceId, created: false };
-  }
+  if (!snap.exists()) return { ok: true, deviceId };
 
   const data = snap.data();
   const current = data.activeDeviceId || null;
@@ -169,7 +152,7 @@ export async function enforceSingleDevice(user) {
 }
 
 // --------------------------
-// Admin: générer des clés (docId = clé)
+// Admin: générer des clés (docId = key)
 // --------------------------
 export async function adminGenerateKeys(count, months) {
   const n = Math.max(1, Math.min(500, Number(count || 1)));
@@ -195,11 +178,9 @@ export async function adminGenerateKeys(count, months) {
 }
 
 // --------------------------
-// Activation licence (docId = clé)
+// Activation licence (getDoc direct, docId = key)
 // --------------------------
 export async function activateWithKey(user, keyRaw) {
-  if (!user || !user.uid) throw new Error("Utilisateur non connecté.");
-
   const key = String(keyRaw || "").trim().toUpperCase();
   if (!key) throw new Error("Clé vide");
 
@@ -213,9 +194,9 @@ export async function activateWithKey(user, keyRaw) {
   if (keyData.revoked) throw new Error("Clé révoquée");
   if (keyData.usedBy && keyData.usedBy !== user.uid) throw new Error("Clé déjà utilisée");
 
-  const nowMs = Date.now();
+  const now = Date.now();
   const months = Number(keyData.months || 12);
-  const expiresAt = addMonthsMillis(nowMs, months);
+  const expiresAt = addMonthsMillis(now, months);
 
   await updateDoc(keyRef, {
     usedBy: user.uid,
@@ -227,11 +208,12 @@ export async function activateWithKey(user, keyRaw) {
   await updateDoc(doc(db, "users", user.uid), {
     license: { active: true, key, expiresAt, status: "active" },
     licenseActivatedAt: serverTimestamp(),
-    lastValidatedAt: nowMs,
+    lastValidatedAt: now,
   });
 
-  saveCache({ lastValidatedAt: nowMs, expiresAt });
+  saveCache({ lastValidatedAt: now, expiresAt });
   return { key, expiresAt, months };
 }
+
 
 
