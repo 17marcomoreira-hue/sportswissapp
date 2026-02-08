@@ -49,8 +49,8 @@
   </div>
 
   <script type="module">
-    import { waitForAuthReady, logout } from "./js/auth.js";
-    import { activateWithKey } from "./js/license.js";
+    import { waitForAuthReady, logout, reloadCurrentUser } from "./js/auth.js";
+    import { activateWithKey, ensureUserProfile } from "./js/license.js";
 
     const $ = (id)=>document.getElementById(id);
     const msg = $("msg");
@@ -65,29 +65,49 @@
     function clearMsg(){ msg.style.display = "none"; }
 
     function goLogin(){
-      // Retour à login + éventuellement on pourrait ajouter un "returnTo"
       location.href = "./login.html";
     }
 
-    // ✅ À l’ouverture de la page : si session expirée -> message + redirection
-    (async ()=>{
-      const user = await waitForAuthReady();
-      if(!user){
-        show("err", "Session expirée : merci de te reconnecter.");
-        setTimeout(goLogin, 900);
-        return;
-      }
-      if(!user.emailVerified){
+    async function getFreshUserOrNull(){
+      // Auth prêt
+      await waitForAuthReady();
+      // ✅ force synchro emailVerified
+      const fresh = await reloadCurrentUser();
+      return fresh || null;
+    }
+
+    async function checkEmailOkOrRedirect(user){
+      // ✅ Assure profil Firestore (et récupère override)
+      const profile = await ensureUserProfile(user);
+      const okEmail = !!user.emailVerified || !!profile.emailVerifiedOverride;
+
+      if(!okEmail){
         show("err", "Email non confirmé : merci de vérifier ta boîte mail.");
         setTimeout(()=>location.href="./verify.html", 900);
-        return;
+        return { ok:false, profile };
+      }
+      return { ok:true, profile };
+    }
+
+    // ✅ À l’ouverture de la page : session + email (avec reload + override)
+    (async ()=>{
+      try{
+        const user = await getFreshUserOrNull();
+        if(!user){
+          show("err", "Session expirée : merci de te reconnecter.");
+          setTimeout(goLogin, 900);
+          return;
+        }
+
+        await checkEmailOkOrRedirect(user);
+      }catch(e){
+        show("err", e?.message || "Erreur de session");
       }
     })();
 
     btnActivate.onclick = async ()=>{
       clearMsg();
 
-      // Sécurité UX
       btnActivate.disabled = true;
       btnActivate.textContent = "Activation…";
 
@@ -96,19 +116,22 @@
           throw new Error("Connexion internet requise pour activer la licence.");
         }
 
-        const user = await waitForAuthReady();
+        const user = await getFreshUserOrNull();
         if(!user){
           show("err", "Session expirée : merci de te reconnecter.");
           setTimeout(goLogin, 900);
           return;
         }
 
+        const { ok } = await checkEmailOkOrRedirect(user);
+        if(!ok) return; // redirection en cours
+
         const key = $("key").value.trim();
         if(!key) throw new Error("Entre une clé d’activation.");
 
         const res = await activateWithKey(user, key);
         const monthsTxt = res.months ? (" ("+res.months+" mois)") : "";
-        show("ok", "Activé" + monthsTxt + " ! Expire le " + new Date(res.expiresAt).toLocaleDateString());
+        show("ok", "Activé" + monthsTxt + " ! Expire le " + new Date(res.expiresAt).toLocaleDateString("fr-CH"));
         setTimeout(()=>location.href="./app.html", 700);
 
       }catch(e){
@@ -126,4 +149,5 @@
   </script>
 </body>
 </html>
+
 
