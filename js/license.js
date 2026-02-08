@@ -1,7 +1,7 @@
 import { db, fns } from "./db.js";
 import { getOrCreateDeviceId } from "./device.js";
 
-// On n’utilise plus query/where/getDocs/addDoc : docId = clé => getDoc direct
+// docId = clé => getDoc direct
 const { doc, getDoc, setDoc, updateDoc, serverTimestamp } = fns;
 
 // ---- Constantes ----
@@ -53,8 +53,12 @@ export function getOfflineDecision() {
   return { allowed: true, reason: "OK (offline grace)" };
 }
 
-// Crée/met à jour le profil user Firestore
+// --------------------------
+// Profil user Firestore
+// --------------------------
 export async function ensureUserProfile(user) {
+  if (!user || !user.uid) throw new Error("Utilisateur non connecté.");
+
   const ref = doc(db, "users", user.uid);
   const snap = await getDoc(ref);
 
@@ -120,6 +124,8 @@ export function computeAccess(profile) {
 }
 
 export async function markValidatedOnline(user, profile) {
+  if (!user || !user.uid) return;
+
   const now = Date.now();
   try {
     await updateDoc(doc(db, "users", user.uid), { lastValidatedAt: now });
@@ -130,11 +136,24 @@ export async function markValidatedOnline(user, profile) {
   saveCache({ lastValidatedAt: now, expiresAt });
 }
 
+// --------------------------
+// Single-device: NE DOIT PAS CRASHER si user absent
+// --------------------------
 export async function enforceSingleDevice(user) {
+  // ✅ garde-fou : si gate.js appelle trop tôt
+  if (!user || !user.uid) {
+    return { ok: false, reason: "User not signed in" };
+  }
+
   const deviceId = getOrCreateDeviceId();
   const ref = doc(db, "users", user.uid);
+
   const snap = await getDoc(ref);
-  if (!snap.exists()) return { ok: true, deviceId };
+
+  // Profil pas encore créé => on ne bloque pas ici
+  if (!snap.exists()) {
+    return { ok: true, deviceId, created: false };
+  }
 
   const data = snap.data();
   const current = data.activeDeviceId || null;
@@ -150,8 +169,7 @@ export async function enforceSingleDevice(user) {
 }
 
 // --------------------------
-// Admin: générer des clés
-// IMPORTANT: docId = clé
+// Admin: générer des clés (docId = clé)
 // --------------------------
 export async function adminGenerateKeys(count, months) {
   const n = Math.max(1, Math.min(500, Number(count || 1)));
@@ -163,7 +181,6 @@ export async function adminGenerateKeys(count, months) {
 
   for (let i = 0; i < n; i++) {
     const key = makeKey();
-    // docId = key
     await setDoc(doc(db, LICENSE_KEYS_COLLECTION, key), {
       key,
       months: m,
@@ -178,10 +195,11 @@ export async function adminGenerateKeys(count, months) {
 }
 
 // --------------------------
-// Activation licence
-// IMPORTANT: getDoc direct (docId = clé)
+// Activation licence (docId = clé)
 // --------------------------
 export async function activateWithKey(user, keyRaw) {
+  if (!user || !user.uid) throw new Error("Utilisateur non connecté.");
+
   const key = String(keyRaw || "").trim().toUpperCase();
   if (!key) throw new Error("Clé vide");
 
@@ -195,9 +213,9 @@ export async function activateWithKey(user, keyRaw) {
   if (keyData.revoked) throw new Error("Clé révoquée");
   if (keyData.usedBy && keyData.usedBy !== user.uid) throw new Error("Clé déjà utilisée");
 
-  const now = Date.now();
+  const nowMs = Date.now();
   const months = Number(keyData.months || 12);
-  const expiresAt = addMonthsMillis(now, months);
+  const expiresAt = addMonthsMillis(nowMs, months);
 
   await updateDoc(keyRef, {
     usedBy: user.uid,
@@ -209,10 +227,11 @@ export async function activateWithKey(user, keyRaw) {
   await updateDoc(doc(db, "users", user.uid), {
     license: { active: true, key, expiresAt, status: "active" },
     licenseActivatedAt: serverTimestamp(),
-    lastValidatedAt: now,
+    lastValidatedAt: nowMs,
   });
 
-  saveCache({ lastValidatedAt: now, expiresAt });
+  saveCache({ lastValidatedAt: nowMs, expiresAt });
   return { key, expiresAt, months };
 }
+
 
