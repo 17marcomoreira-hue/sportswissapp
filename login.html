@@ -16,310 +16,211 @@
       --text:#0b1220;
       --muted:rgba(11,18,32,.62);
       --line:rgba(11,18,32,.10);
-      --shadow:0 18px 45px rgba(15,23,42,.10);
-      --radius:18px;
-      --blue:#2563eb;
-      --purple:#7c3aed;
-      --green:#16a34a;
+      --shadow:0 12px 30px rgba(15,23,42,.08);
+      --brand:#2563eb;
+      --brand2:#1d4ed8;
+      --ok:rgba(22,163,74,.10);
+      --okLine:rgba(22,163,74,.22);
+      --err:rgba(239,68,68,.10);
+      --errLine:rgba(239,68,68,.25);
     }
     *{box-sizing:border-box}
+    html,body{height:100%}
     body{
       margin:0;
-      min-height:100vh;
-      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+      background:linear-gradient(180deg,#f6f7fb, #eef2ff);
       color:var(--text);
-      background:
-        radial-gradient(900px 550px at 15% 10%, rgba(37,99,235,.18), transparent 55%),
-        radial-gradient(900px 550px at 95% 20%, rgba(124,58,237,.14), transparent 60%),
-        radial-gradient(900px 550px at 45% 105%, rgba(22,163,74,.10), transparent 60%),
-        var(--bg);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:18px;
     }
-
-    .wrap{width:min(1100px,92vw); margin:28px auto 22px;}
-    header{
-      display:flex; align-items:center; justify-content:space-between;
-      gap:14px; padding:10px 4px 16px;
+    .wrap{width:100%;max-width:520px}
+    .header{
+      display:flex;align-items:center;gap:10px;margin-bottom:12px;
     }
-    .brand{display:flex; align-items:center; gap:10px;}
     .logo{
-      width:44px;height:44px;border-radius:14px;
-      background:linear-gradient(135deg,var(--blue),var(--purple));
-      display:grid;place-items:center; overflow:hidden;
-      box-shadow:0 12px 28px rgba(37,99,235,.25);
+      width:46px;height:46px;border-radius:14px;
+      background:#fff;box-shadow:var(--shadow);
+      display:flex;align-items:center;justify-content:center;
+      overflow:hidden;
     }
-    .logo img{
-      width:30px;height:30px;object-fit:contain;
-      filter:drop-shadow(0 2px 6px rgba(0,0,0,.25));
-    }
-    .brandTitle{font-weight:950; letter-spacing:.2px}
-    .topNote{color:var(--muted); font-weight:800; font-size:.92rem}
-
-    .grid{
-      display:grid;
-      grid-template-columns: 1.15fr .85fr;
-      gap:16px;
-      align-items:stretch;
-    }
-    @media (max-width: 920px){
-      .grid{grid-template-columns:1fr}
-      header{flex-direction:column; align-items:flex-start}
-    }
+    .logo img{width:42px;height:42px;object-fit:contain}
+    h1{font-size:20px;margin:0}
+    .muted{color:var(--muted);font-size:13px;line-height:1.4}
 
     .card{
       background:var(--card);
       border:1px solid var(--line);
-      border-radius:var(--radius);
+      border-radius:18px;
       box-shadow:var(--shadow);
+      padding:16px;
+    }
+
+    .tabs{
+      display:flex;
+      border:1px solid var(--line);
+      border-radius:14px;
       overflow:hidden;
+      margin-bottom:12px;
+      background:#fff;
     }
-
-    /* HERO */
-    .hero{padding:22px}
-    .kicker{
-      display:inline-flex; align-items:center; gap:10px;
-      padding:8px 12px; border-radius:999px;
-      background:rgba(37,99,235,.08);
-      border:1px solid rgba(37,99,235,.18);
-      color:rgba(37,99,235,.95);
-      font-weight:950;
-      letter-spacing:.1px;
-    }
-    .hero h1{
-      margin:14px 0 10px;
-      font-size:2.05rem;
-      line-height:1.08;
-      letter-spacing:-.4px;
-    }
-    .hero p{margin:0; color:var(--muted); line-height:1.55; font-size:1.02rem}
-
-    .badges{display:flex; gap:10px; flex-wrap:wrap; margin-top:14px}
-    .badge{
-      display:inline-flex; align-items:center; gap:8px;
-      padding:9px 11px; border-radius:999px;
-      border:1px solid var(--line);
-      background:rgba(11,18,32,.03);
-      font-weight:900;
-      color:rgba(11,18,32,.86);
-      user-select:none;
-    }
-    .badge strong{color:var(--text)}
-
-    .features{
-      margin-top:16px;
-      display:grid; gap:10px;
-      grid-template-columns:1fr 1fr;
-    }
-    @media (max-width: 560px){ .features{grid-template-columns:1fr} }
-    .feat{
-      padding:12px 12px;
-      border-radius:16px;
-      border:1px solid var(--line);
-      background:linear-gradient(180deg, rgba(11,18,32,.02), rgba(11,18,32,.00));
-    }
-    .feat b{display:block; margin-bottom:4px}
-    .feat span{color:var(--muted); line-height:1.45}
-
-    /* LOGIN CARD */
-    .auth{padding:18px}
-    .authHead{display:flex; gap:12px; align-items:center}
-    .authHead h2{margin:0; font-size:1.25rem; letter-spacing:-.2px}
-    .authHead .sub{color:var(--muted); margin-top:2px; font-weight:700}
-
-    .tabs{display:flex; gap:8px; margin-top:14px}
     .tab{
       flex:1;
-      border-radius:14px;
-      border:1px solid var(--line);
       padding:10px 12px;
-      background:rgba(11,18,32,.02);
-      font-weight:950;
-      color:rgba(11,18,32,.86);
+      text-align:center;
       cursor:pointer;
+      font-weight:600;
+      font-size:14px;
+      user-select:none;
+      color:rgba(11,18,32,.72);
     }
-    .tab.active{background:#fff; box-shadow:0 10px 26px rgba(15,23,42,.08)}
+    .tab.active{
+      background:rgba(37,99,235,.10);
+      color:var(--brand2);
+    }
 
-    .panel{display:none; margin-top:12px}
+    .panel{display:none}
     .panel.active{display:block}
 
-    label{display:block; margin:10px 0 6px; color:var(--muted); font-size:.92rem; font-weight:800}
+    label{display:block;font-size:13px;font-weight:600;margin:10px 0 6px}
     input{
       width:100%;
       padding:12px 12px;
-      border-radius:14px;
-      border:1px solid rgba(11,18,32,.16);
-      font-size:16px;
+      border-radius:12px;
+      border:1px solid var(--line);
       outline:none;
+      font-size:15px;
       background:#fff;
     }
-    input:focus{
-      border-color:rgba(37,99,235,.40);
-      box-shadow:0 0 0 4px rgba(37,99,235,.14);
-    }
+    input:focus{border-color:rgba(37,99,235,.35);box-shadow:0 0 0 4px rgba(37,99,235,.12)}
 
-    .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:12px}
-    button{
-      cursor:pointer;
-      border:0;
-      border-radius:14px;
-      padding:12px 14px;
-      font-weight:950;
-      letter-spacing:.1px;
+    .row{
+      display:flex;gap:10px;align-items:center;margin-top:12px;
     }
     .btn{
-      flex:1;
+      width:100%;
+      background:linear-gradient(180deg,var(--brand),var(--brand2));
       color:#fff;
-      background:linear-gradient(135deg,var(--blue),var(--purple));
-      box-shadow:0 14px 26px rgba(37,99,235,.18);
-    }
-    .btn2{
-      flex:1;
-      background:#fff;
-      border:1px solid rgba(11,18,32,.16);
-      color:rgba(11,18,32,.92);
-    }
-    .btn:disabled,.btn2:disabled{opacity:.55; cursor:not-allowed}
-    .link{
-      background:transparent;
-      border:0;
-      padding:0;
-      color:var(--blue);
-      font-weight:950;
-      cursor:pointer;
-    }
-
-    .msg{
-      margin-top:12px;
+      border:none;
       border-radius:14px;
+      padding:12px 14px;
+      font-weight:800;
+      cursor:pointer;
+      font-size:15px;
+      box-shadow:0 10px 18px rgba(37,99,235,.18);
+    }
+    .btn:disabled{opacity:.55;cursor:not-allowed}
+    .btnGhost{
+      background:transparent;
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:12px 14px;
+      cursor:pointer;
+      font-weight:700;
+      width:100%;
+    }
+    .msg{
+      margin-top:10px;
+      border-radius:12px;
       padding:10px 12px;
       display:none;
-      font-weight:800;
+      font-size:14px;
+      line-height:1.35;
     }
-    .msg.ok{display:block;background:rgba(22,163,74,.10);border:1px solid rgba(22,163,74,.22);color:rgba(22,163,74,.95)}
-    .msg.err{display:block;background:rgba(239,68,68,.10);border:1px solid rgba(239,68,68,.22);color:rgba(185,28,28,.95)}
-    .hint{margin-top:10px; font-size:.9rem; color:var(--muted); line-height:1.35}
-    .fine{margin-top:10px; font-size:.84rem; color:rgba(11,18,32,.55); text-align:center; padding:10px 0 2px}
+    .msg.ok{display:block;background:var(--ok);border:1px solid var(--okLine);color:rgba(22,163,74,.95)}
+    .msg.err{display:block;background:var(--err);border:1px solid var(--errLine);color:rgba(185,28,28,.95)}
 
-    footer{
-      margin:16px 0 0;
-      text-align:center;
-      color:rgba(11,18,32,.55);
-      font-size:.88rem;
-      font-weight:750;
+    .foot{
+      margin-top:10px;
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+      font-size:13px;
+      color:var(--muted);
     }
+    a{color:var(--brand2);text-decoration:none;font-weight:700}
+    a:hover{text-decoration:underline}
+
+    .feat{
+      margin-top:10px;
+      padding:10px 12px;
+      border:1px solid var(--line);
+      border-radius:14px;
+      background:rgba(255,255,255,.7);
+      font-size:13px;
+      color:rgba(11,18,32,.78);
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+    }
+    .feat b{color:rgba(11,18,32,.9)}
   </style>
 </head>
 
 <body>
   <div class="wrap">
-    <header>
-      <div class="brand">
-        <div class="logo">
-          <img src="icons/icon-192.png" alt="">
+    <div class="header">
+      <div class="logo">
+        <img src="icons/icon-192.png" alt="Logo">
+      </div>
+      <div>
+        <h1>Connexion</h1>
+        <div class="muted">Compte + licence annuelle (un appareil à la fois).</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="tabs" role="tablist" aria-label="Connexion / Inscription">
+        <div class="tab active" id="tabLogin" role="tab" aria-selected="true">Se connecter</div>
+        <div class="tab" id="tabSignup" role="tab" aria-selected="false">Créer un compte</div>
+      </div>
+
+      <div class="panel active" id="panelLogin">
+        <label for="emailLogin">Email</label>
+        <input id="emailLogin" type="email" autocomplete="email" placeholder="nom@exemple.com">
+
+        <label for="passwordLogin">Mot de passe</label>
+        <input id="passwordLogin" type="password" autocomplete="current-password" placeholder="••••••••">
+
+        <div class="row">
+          <button class="btn" id="btnLogin" type="button">Se connecter</button>
         </div>
-        <div>
-          <div class="brandTitle">Tournois</div>
-          <div class="topNote">Gestion de tournois — simple, rapide, pro</div>
+
+        <div class="foot">
+          <span>Mot de passe oublié ?</span>
+          <a href="#" id="btnReset">Réinitialiser</a>
         </div>
       </div>
-      <div class="topNote">✅ Recommandé : iPad / tablette / ordinateur • ✅ Aucun téléchargement requis • ✅ Aucune publicité</div>
-    </header>
 
-    <div class="grid">
-      <!-- HERO -->
-      <section class="card">
-        <div class="hero">
-          <div class="kicker">🎁 Essai gratuit : <strong>10 minutes</strong> dès la création du compte</div>
+      <div class="panel" id="panelSignup">
+        <label for="emailSignup">Email</label>
+        <input id="emailSignup" type="email" autocomplete="email" placeholder="nom@exemple.com">
 
-          <h1>Crée ton tournoi en quelques clics.</h1>
-          <p>
-            Planifie les matchs, saisis les scores et imprime des feuilles prêtes à l’emploi.
-            Parfait pour écoles, clubs et événements — avec la possibilité de gérer <b>plusieurs tournois en parallèle</b>.
-          </p>
+        <label for="passwordSignup">Mot de passe</label>
+        <input id="passwordSignup" type="password" autocomplete="new-password" placeholder="6 caractères minimum">
 
-          <div class="badges">
-            <div class="badge">🧾 <strong>Feuilles par terrain</strong> (horaire + espace score)</div>
-            <div class="badge">📄 <strong>Feuilles par équipe</strong> (horaire + terrain)</div>
-            <div class="badge">🎾 <strong>Mode ATP automatique</strong> (différenciation)</div>
-            <div class="badge">💾 <strong>Sauvegarde</strong> locale + en ligne</div>
-          </div>
+        <label for="passwordSignup2">Confirmer le mot de passe</label>
+        <input id="passwordSignup2" type="password" autocomplete="new-password" placeholder="Répéter le mot de passe">
 
-          <div class="features">
-            <div class="feat"><b>📅 Organisation claire</b><span>Terrains, rounds, planning et classement en un coup d’œil.</span></div>
-            <div class="feat"><b>🖨️ Exports professionnels</b><span>PDF/feuilles prêtes pour arbitres et équipes.</span></div>
-            <div class="feat"><b>🔒 Accès sécurisé</b><span>Compte + licence annuelle (un appareil à la fois).</span></div>
-            <div class="feat"><b>⚡ Fluide sur tablette</b><span>Optimisé iPad/tablette/ordinateur (pas idéal sur smartphone).</span></div>
-          </div>
-
-          <div class="hint" style="margin-top:14px">
-            Conseil : si tu utilises l’app sur smartphone, l’expérience est moins confortable (écran trop petit).
-          </div>
-        </div>
-      </section>
-
-      <!-- AUTH -->
-      <aside class="card auth">
-        <div class="authHead">
-          <div class="logo" style="width:46px;height:46px;border-radius:16px">
-            <img src="icons/icon-192.png" alt="">
-          </div>
-          <div>
-            <h2>Connexion</h2>
-            <div class="sub">Accède à l’essai gratuit, ou active ta licence.</div>
-          </div>
+        <div class="row">
+          <button class="btn" id="btnSignup" type="button">Créer le compte</button>
         </div>
 
-        <div class="msg" id="msg"></div>
-
-        <div class="tabs" role="tablist" aria-label="Connexion ou création de compte">
-          <button class="tab active" id="tabLogin" type="button">Se connecter</button>
-          <button class="tab" id="tabSignup" type="button">Créer un compte</button>
+        <div class="feat">
+          <b>🔒 Accès sécurisé</b>
+          <span>Vérification email obligatoire avant de démarrer.</span>
         </div>
+      </div>
 
-        <div class="panel active" id="panelLogin">
-          <label>Email</label>
-          <input id="emailLogin" type="email" autocomplete="email" placeholder="ex: prenom.nom@email.com" />
-          <label>Mot de passe</label>
-          <input id="passwordLogin" type="password" autocomplete="current-password" placeholder="••••••••" />
-
-          <div class="row">
-            <button class="btn" id="btnLogin" disabled>Se connecter</button>
-          </div>
-
-          <div class="row" style="justify-content:space-between">
-            <button class="link" id="btnReset" type="button">Mot de passe perdu</button>
-          </div>
-
-          <div class="hint">
-            Après clic, vérifie aussi les <b>spams / indésirables</b> si tu ne vois pas l’email.
-          </div>
-        </div>
-
-        <div class="panel" id="panelSignup">
-          <label>Email</label>
-          <input id="emailSignup" type="email" autocomplete="email" placeholder="ex: prenom.nom@email.com" />
-          <label>Mot de passe</label>
-          <input id="passwordSignup" type="password" autocomplete="new-password" placeholder="6 caractères minimum" />
-          <label>Confirmer le mot de passe</label>
-          <input id="passwordSignup2" type="password" autocomplete="new-password" placeholder="Répète le mot de passe" />
-
-          <div class="row">
-            <button class="btn2" id="btnSignup" disabled>Créer un compte</button>
-          </div>
-
-          <div class="hint">
-            L’essai gratuit démarre juste après la création du compte (10 minutes).
-          </div>
-        </div>
-
-        <div class="fine">En créant un compte, tu acceptes d’utiliser l’app sur iPad/tablette/ordinateur (smartphone non recommandé).</div>
-
-        <footer>Développé par <b>Marco Moreira-Perriard</b></footer>
-      </aside>
+      <div id="msg" class="msg"></div>
     </div>
   </div>
 
   <script type="module">
-    import { login, signup, resetPassword } from "./js/auth.js";
+    import { login, signup, resetPassword, reloadCurrentUser } from "./js/auth.js";
     import { ensureUserProfile, computeAccess, enforceSingleDevice } from "./js/license.js";
 
     const $ = (id)=>document.getElementById(id);
@@ -375,22 +276,41 @@
     });
     refreshButtons();
 
-    async function afterAuth(user){
+    function getNext(){
+      const p = new URLSearchParams(location.search);
+      const next = p.get("next");
+      return next ? decodeURIComponent(next) : null;
+    }
+
+    async function afterAuth(){
       if(!navigator.onLine){
         show("err","Connexion internet requise pour la première connexion.");
         return;
       }
 
-      // ✅ BLOQUE tant que l’email n’est pas vérifié
-      if(!user.emailVerified){
+      // ✅ IMPORTANT : rafraîchir l’utilisateur pour avoir emailVerified à jour
+      const freshUser = await reloadCurrentUser();
+      if(!freshUser){
+        show("err","Non connecté. Merci de réessayer.");
+        return;
+      }
+
+      // ✅ Bloque tant que l’email n’est pas vérifié (sur user “fresh”)
+      if(!freshUser.emailVerified){
         location.href = "./verify.html";
         return;
       }
 
-      await enforceSingleDevice(user);
-      const profile = await ensureUserProfile(user);
+      await enforceSingleDevice(freshUser);
+      const profile = await ensureUserProfile(freshUser);
       const access = computeAccess(profile);
-      location.href = access.allowed ? "./app.html" : "./activate.html";
+
+      const next = getNext();
+      if(access.allowed){
+        location.href = next || "./app.html";
+      }else{
+        location.href = "./activate.html";
+      }
     }
 
     btnLogin.onclick = async ()=>{
@@ -398,8 +318,8 @@
       try{
         const email = emailLogin.value.trim();
         const pass = passwordLogin.value;
-        const user = await login(email, pass);
-        await afterAuth(user);
+        await login(email, pass);
+        await afterAuth();
       }catch(e){
         show("err", e?.message || "Erreur de connexion");
       }
@@ -417,7 +337,6 @@
 
         await signup(email, p1);
 
-        // ✅ Compte créé + email de vérification envoyé -> on force le passage par verify.html
         show("ok","Compte créé. Vérifie ton email (spams/indésirables) pour démarrer l’essai.");
         setTimeout(()=>location.href="./verify.html", 600);
 
@@ -440,6 +359,7 @@
   </script>
 </body>
 </html>
+
 
 
 
