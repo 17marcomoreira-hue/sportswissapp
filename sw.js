@@ -1,9 +1,10 @@
-const CACHE = "sportswissapp-cache-v7";
+const CACHE = "sportswissapp-cache-v8";
 
 self.addEventListener("install", (event) => {
   event.waitUntil((async () => {
     await self.skipWaiting();
     const cache = await caches.open(CACHE);
+    // Cache minimal pour fallback offline
     await cache.addAll(["./", "./index.html"]);
   })());
 });
@@ -18,9 +19,22 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   const req = event.request;
-  const url = new URL(req.url);
 
-  // ✅ TRÈS IMPORTANT : ne JAMAIS toucher aux autres domaines (Firestore, Google, etc.)
+  // ✅ Garde-fous (Firefox / requêtes spéciales)
+  if (!req || !req.url) return;
+
+  let url;
+  try {
+    url = new URL(req.url);
+  } catch (e) {
+    // URL invalide => on laisse le navigateur gérer
+    return;
+  }
+
+  // ✅ Ne traiter que http(s)
+  if (url.protocol !== "http:" && url.protocol !== "https:") return;
+
+  // ✅ Ne JAMAIS toucher aux autres domaines (Firestore, Google, etc.)
   if (url.origin !== self.location.origin) return;
 
   if (req.method !== "GET") return;
@@ -29,7 +43,8 @@ self.addEventListener("fetch", (event) => {
   if (url.pathname.endsWith(".js") || url.pathname.endsWith(".css")) {
     event.respondWith((async () => {
       try {
-        return await fetch(req, { cache: "no-store" });
+        const res = await fetch(req, { cache: "no-store" });
+        return res;
       } catch (e) {
         const cached = await caches.match(req);
         return cached || Response.error();
@@ -51,15 +66,17 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // autres assets : cache-first léger
+  // ✅ Autres assets : cache-first léger
   event.respondWith((async () => {
     const cache = await caches.open(CACHE);
     const cached = await cache.match(req);
     if (cached) return cached;
+
     const res = await fetch(req);
     cache.put(req, res.clone());
     return res;
   })());
 });
+
 
 
