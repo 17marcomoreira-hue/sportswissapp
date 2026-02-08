@@ -48,6 +48,11 @@ function addMonthsMillis(baseMillis, months) {
 }
 
 // ---------- UI ----------
+function setMe(text) {
+  const me = $("me");
+  if (me) me.textContent = text;
+}
+
 function showGlobalError(e) {
   const msg = e?.message || String(e || "Erreur");
   console.error(e);
@@ -60,8 +65,7 @@ function showGlobalError(e) {
   }
 
   // Fallback si #globalError n’existe pas
-  const me = $("me");
-  if (me) me.textContent = `Erreur: ${msg}`;
+  setMe(`Erreur: ${msg}`);
   alert(msg);
 }
 
@@ -77,14 +81,22 @@ function clearGlobalError() {
 async function requireAdmin() {
   const auth = await waitForAuthReady();
   const user = auth.currentUser;
-  if (!user) throw new Error("Non connecté.");
-  if (!isAdminEmail(user.email, ADMIN_EMAIL)) throw new Error("Accès admin refusé.");
-  return user;
-}
 
-function setMe(text) {
-  const me = $("me");
-  if (me) me.textContent = text;
+  // Pas connecté => redirection login
+  if (!user) {
+    setMe("Redirection vers la page de connexion…");
+    location.href = "index.html?next=admin.html";
+    throw new Error("Non connecté.");
+  }
+
+  // Connecté mais pas admin
+  if (!isAdminEmail(user.email, ADMIN_EMAIL)) {
+    setMe("Accès refusé. Redirection…");
+    location.href = "index.html";
+    throw new Error("Accès admin refusé.");
+  }
+
+  return user;
 }
 
 // ---------- USERS ----------
@@ -290,7 +302,7 @@ function exportKeysCsv() {
   downloadCsv("licenseKeys.csv", rows);
 }
 
-// Génération de clés (docId = clé)
+// ---------- KEY GENERATION (docId = clé) ----------
 const CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const part = (len) => Array.from({ length: len }, () => CHARS[Math.floor(Math.random() * CHARS.length)]).join("");
 const makeKey = () => `${part(4)}-${part(4)}-${part(4)}`;
@@ -323,7 +335,6 @@ async function grantManual(email, months) {
   if (snap.empty) throw new Error("Utilisateur introuvable (il doit s'être connecté au moins une fois).");
 
   const uid = snap.docs[0].id;
-
   const m = Number(months || 12);
   const expiresAt = addMonthsMillis(now(), m);
 
@@ -343,7 +354,7 @@ async function grantManual(email, months) {
     const user = await requireAdmin();
     setMe(`Connecté en admin : ${user.email}`);
 
-    // Buttons top
+    // Logout
     $("btnLogout")?.addEventListener("click", async () => {
       try {
         await logout();
@@ -391,7 +402,7 @@ async function grantManual(email, months) {
       }
     });
 
-    // Manual license
+    // Manual
     $("btnManual12")?.addEventListener("click", async () => {
       try {
         clearGlobalError();
@@ -434,5 +445,6 @@ async function grantManual(email, months) {
     showGlobalError(e);
   }
 })();
+
 
 
