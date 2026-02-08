@@ -6,34 +6,122 @@
   <title>Admin — Sportswissapp</title>
   <meta name="theme-color" content="#0b1220" />
   <style>
-    :root{--bg:#0b1220;--card:rgba(255,255,255,.92);--text:#0b1220;--muted:rgba(11,18,32,.70)}
-    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:#fff}
-    .wrap{width:min(1250px,95vw);margin:16px auto 40px;display:grid;gap:14px}
-    .card{background:var(--card);color:var(--text);border:1px solid rgba(11,18,32,.14);border-radius:18px;box-shadow:0 18px 40px rgba(0,0,0,.35);padding:14px}
+    :root{
+      --bg:#0b1220;
+      --card:rgba(255,255,255,.92);
+      --text:#0b1220;
+      --muted:rgba(11,18,32,.70);
+      --line:rgba(11,18,32,.14);
+      --okBg:rgba(34,197,94,.10);
+      --okLine:rgba(34,197,94,.25);
+      --warnBg:rgba(245,158,11,.10);
+      --warnLine:rgba(245,158,11,.25);
+      --badBg:rgba(239,68,68,.10);
+      --badLine:rgba(239,68,68,.25);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      background:var(--bg);
+      color:#fff;
+    }
+    .wrap{
+      width:min(1250px,95vw);
+      margin:16px auto 40px;
+      display:grid;
+      gap:14px;
+    }
+    .card{
+      background:var(--card);
+      color:var(--text);
+      border:1px solid var(--line);
+      border-radius:18px;
+      box-shadow:0 18px 40px rgba(0,0,0,.35);
+      padding:14px;
+    }
     h1{margin:0 0 6px;font-size:1.35rem}
     .muted{color:var(--muted);font-size:.92rem;line-height:1.35}
     .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-    input,select{padding:10px 10px;border-radius:12px;border:1px solid rgba(11,18,32,.18);font-size:14px}
-    button{cursor:pointer;border:0;border-radius:12px;padding:10px 12px;font-weight:900}
+    input,select{
+      padding:10px 10px;
+      border-radius:12px;
+      border:1px solid rgba(11,18,32,.18);
+      font-size:14px;
+      background:#fff;
+      color:#111827;
+    }
+    button{
+      cursor:pointer;
+      border:0;
+      border-radius:12px;
+      padding:10px 12px;
+      font-weight:900;
+    }
     .btn{background:linear-gradient(135deg,#2563eb,#7c3aed);color:#fff}
     .btn2{background:#fff;border:1px solid rgba(11,18,32,.18);color:#111827}
-    .btnDanger{background:rgba(239,68,68,.10);border:1px solid rgba(239,68,68,.25);color:#7f1d1d}
+    .btnDanger{background:var(--badBg);border:1px solid var(--badLine);color:#7f1d1d}
+    .btnWarn{background:var(--warnBg);border:1px solid var(--warnLine);color:#7c4a00}
     a{color:#2563eb;text-decoration:none;font-weight:900}
-    table{width:100%;border-collapse:collapse;background:#fff;border-radius:14px;overflow:hidden}
-    th,td{padding:10px;border-bottom:1px solid rgba(11,18,32,.10);vertical-align:top}
-    th{background:rgba(11,18,32,.04);text-align:left;white-space:nowrap}
-    .tag{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;font-weight:900;font-size:.82rem;border:1px solid rgba(11,18,32,.14);background:rgba(11,18,32,.04);white-space:nowrap}
-    .ok{background:rgba(34,197,94,.10);border-color:rgba(34,197,94,.25);color:#14532d}
-    .warn{background:rgba(245,158,11,.10);border-color:rgba(245,158,11,.25);color:#7c4a00}
-    .bad{background:rgba(239,68,68,.10);border-color:rgba(239,68,68,.25);color:#7f1d1d}
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      background:#fff;
+      border-radius:14px;
+      overflow:hidden;
+    }
+    th,td{
+      padding:10px;
+      border-bottom:1px solid rgba(11,18,32,.10);
+      vertical-align:top;
+    }
+    th{
+      background:rgba(11,18,32,.04);
+      text-align:left;
+      white-space:nowrap;
+    }
+    .tag{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:4px 8px;
+      border-radius:999px;
+      font-weight:900;
+      font-size:.82rem;
+      border:1px solid rgba(11,18,32,.14);
+      background:rgba(11,18,32,.04);
+      white-space:nowrap;
+    }
+    .ok{background:var(--okBg);border-color:var(--okLine);color:#14532d}
+    .warn{background:var(--warnBg);border-color:var(--warnLine);color:#7c4a00}
+    .bad{background:var(--badBg);border-color:var(--badLine);color:#7f1d1d}
     .small{font-size:.85rem;color:rgba(11,18,32,.70)}
     .grid{display:grid;grid-template-columns:1.25fr .75fr;gap:14px}
     @media (max-width: 980px){.grid{grid-template-columns:1fr}}
     .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,'Liberation Mono',monospace;font-size:.9rem}
+
+    .actions{display:flex;gap:8px;flex-wrap:wrap}
+    .btnMini{padding:8px 10px;border-radius:12px;font-weight:900;font-size:.85rem}
+    .divider{border:0;border-top:1px solid rgba(11,18,32,.12);margin:14px 0}
+    .note{
+      margin-top:10px;
+      padding:10px 12px;
+      border-radius:14px;
+      border:1px solid rgba(11,18,32,.12);
+      background:rgba(255,255,255,.7);
+      color:rgba(11,18,32,.76);
+      font-size:.9rem;
+      line-height:1.35;
+    }
+    .note b{color:rgba(11,18,32,.9)}
   </style>
 </head>
+
 <body>
   <div class="wrap">
+
+    <!-- Header -->
     <div class="card">
       <div class="row" style="justify-content:space-between">
         <div>
@@ -41,18 +129,27 @@
           <div class="muted" id="me">Chargement…</div>
         </div>
         <div class="row">
-          <a class="btn2" href="./app.html" style="padding:10px 12px;border-radius:12px;display:inline-flex;align-items:center">⬅ Retour app</a>
+          <a class="btn2" href="./app.html" style="padding:10px 12px;border-radius:12px;display:inline-flex;align-items:center">
+            ⬅ Retour app
+          </a>
           <button class="btn2" id="btnLogout" type="button">Déconnexion</button>
         </div>
+      </div>
+
+      <div class="note">
+        <b>Astuce dépannage :</b> si un utilisateur a vérifié son email mais que l’app continue à demander la vérification,
+        tu peux utiliser <b>Valider email (override)</b>. Cela ne modifie pas Firebase Auth : ça autorise l’accès dans l’app
+        via un flag Firestore (à utiliser uniquement en cas de bug).
       </div>
     </div>
 
     <div class="grid">
+      <!-- Users -->
       <div class="card">
         <div class="row" style="justify-content:space-between">
           <div>
             <div style="font-weight:1000">👥 Utilisateurs</div>
-            <div class="muted">Recherche + statuts essai/licence + appareil actif</div>
+            <div class="muted">Recherche + statuts essai/licence + appareil actif + override email</div>
           </div>
           <div class="row">
             <input id="userSearch" placeholder="Rechercher email…" />
@@ -81,9 +178,11 @@
 
         <div class="small" style="margin-top:10px">
           “Renvoyer vérif.” programme le renvoi : l’email sera renvoyé automatiquement au prochain login de l’utilisateur.
+          “Valider email (override)” débloque l’accès même si <span class="mono">emailVerified</span> n’est pas à jour côté Auth.
         </div>
       </div>
 
+      <!-- Keys & manual license -->
       <div class="card">
         <div style="font-weight:1000">🔑 Clés & Licences</div>
         <div class="muted">Génération, filtres, export CSV, licence manuelle</div>
@@ -127,7 +226,7 @@
           </table>
         </div>
 
-        <hr style="border:0;border-top:1px solid rgba(11,18,32,.12);margin:14px 0">
+        <hr class="divider">
 
         <div style="font-weight:1000">🧾 Licence manuelle (sans clé)</div>
         <div class="row" style="margin-top:10px">
@@ -136,7 +235,11 @@
           <button class="btn2" id="btnExtend12" type="button">Prolonger 12 mois</button>
           <button class="btnDanger" id="btnRevoke" type="button">Révoquer</button>
         </div>
-        <div class="small" style="margin-top:10px">Astuce : l’utilisateur doit s’être connecté au moins une fois pour apparaître dans la liste.</div>
+        <div class="small" style="margin-top:10px">
+          Astuce : l’utilisateur doit s’être connecté au moins une fois pour apparaître dans la liste.
+        </div>
+
+        <div id="globalError" class="note" style="display:none;border-color:rgba(239,68,68,.25);background:rgba(239,68,68,.08);color:#7f1d1d"></div>
       </div>
     </div>
   </div>
@@ -144,3 +247,4 @@
   <script type="module" src="./js/admin.js"></script>
 </body>
 </html>
+
