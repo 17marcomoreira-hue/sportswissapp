@@ -1,13 +1,13 @@
 // js/storage.js — ULTRA COMPAT + Firestore-safe
 // - Import/Export local (localStorage) + téléchargement JSON
-// - Snapshots cloud (Firestore) avec nettoyage (sanitize) pour éviter UserImpl / objets non supportés
+// - Snapshots cloud (Firestore) en doc unique "latest" => réduit énormément quota
 // - Exports "compat" pour éviter les erreurs d'imports (gate/admin/license)
 
 import { auth } from "./auth.js";
 import { db, fns } from "./db.js";
 
 const {
-  doc, getDoc, updateDoc,
+  doc, getDoc, setDoc, updateDoc,
   collection, getDocs, addDoc, query, orderBy, limit,
   serverTimestamp
 } = fns;
@@ -38,101 +38,40 @@ export function downloadJson(filename, data){
   setTimeout(()=>URL.revokeObjectURL(url), 1500);
 }
 
-export function downloadText(filename, text, mime="text/plain;charset=utf-8"){
-  // ✅ Supporte aussi l'appel downloadText(text) (sans filename)
-  if (text === undefined && filename !== undefined && typeof filename !== "string") {
-    text = filename;
-    filename = "export.txt";
-  }
+/* -------------------- LOCAL STORAGE EXPORT/IMPORT -------------------- */
 
-  const name = String(filename ?? "export.txt");
-  const safeName = name.replace(/[^\w.\-]+/g, "_");
-
-  const blob = new Blob([String(text ?? "")], { type: mime });
-  const url = URL.createObjectURL(blob);
-
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = safeName;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(()=>URL.revokeObjectURL(url), 1500);
-}
-
-/* -------------------- FILE PICKER -------------------- */
-
-export function readJsonFile(file){
-  return new Promise((resolve, reject)=>{
-    if(!file) return reject(new Error("Aucun fichier sélectionné."));
-    const reader = new FileReader();
-    reader.onerror = ()=>reject(new Error("Lecture du fichier impossible."));
-    reader.onload = ()=>{
-      try{ resolve(JSON.parse(String(reader.result || ""))); }
-      catch{ reject(new Error("Fichier JSON invalide.")); }
-    };
-    reader.readAsText(file, "utf-8");
-  });
-}
-
-export async function pickAndReadJson(){
-  return new Promise((resolve, reject)=>{
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = "application/json,.json";
-    input.onchange = async ()=>{
-      try{
-        const file = input.files?.[0];
-        const obj = await readJsonFile(file);
-        resolve({ file, obj });
-      }catch(e){ reject(e); }
-    };
-    input.click();
-  });
-}
-
-/* -------------------- LOCALSTORAGE SNAPSHOT -------------------- */
-
-// ✅ export attendu: getAllLocalStorage
 export function getAllLocalStorage(){
   const out = {};
-  try{
-    for(let i=0;i<localStorage.length;i++){
-      const k = localStorage.key(i);
-      if(k==null) continue;
-      out[k] = localStorage.getItem(k);
-    }
-  }catch{}
+  for(let i=0;i<localStorage.length;i++){
+    const k = localStorage.key(i);
+    out[k] = localStorage.getItem(k);
+  }
   return out;
 }
 
-export function setAllLocalStorage(obj, { clearFirst=false } = {}){
-  try{
-    if(clearFirst) localStorage.clear();
-    if(!obj || typeof obj !== "object") return;
-    for(const [k,v] of Object.entries(obj)){
-      localStorage.setItem(String(k), String(v ?? ""));
-    }
-  }catch{}
+export function clearLocalStorage(){
+  localStorage.clear();
 }
 
-// ✅ export attendu: uploadJsonToLocalStorage
-export function uploadJsonToLocalStorage(jsonOrObject, { clearFirst=false } = {}){
-  let obj = jsonOrObject;
-  if(typeof obj === "string"){
-    try{ obj = JSON.parse(obj); }
-    catch{ throw new Error("JSON invalide (impossible à parser)."); }
+export function uploadJsonToLocalStorage(objOrJson, { clearFirst=false } = {}){
+  let obj = objOrJson;
+  if(typeof objOrJson === "string"){
+    obj = JSON.parse(objOrJson);
   }
-  if(!obj || typeof obj !== "object") throw new Error("Format invalide.");
-  setAllLocalStorage(obj, { clearFirst });
-  return true;
+  if(!obj || typeof obj !== "object") throw new Error("JSON invalide.");
+
+  if(clearFirst) clearLocalStorage();
+
+  for(const [k,v] of Object.entries(obj)){
+    localStorage.setItem(k, String(v));
+  }
 }
 
-/* -------------------- CLOUD SNAPSHOTS (Firestore) -------------------- */
+/* -------------------- AUTH HELPER -------------------- */
 
 function requireUser(){
   const u = auth.currentUser;
-  if(!u) throw new Error("Non connecté.");
+  if(!u) throw new Error("Utilisateur non connecté.");
   return u;
 }
 
@@ -140,48 +79,25 @@ function snapshotsCol(uid){
   return collection(db, "users", uid, "snapshots");
 }
 
-/**
- * Nettoie n'importe quel objet "state" pour qu'il soit stockable dans Firestore :
- * - supprime fonctions / undefined
- * - convertit Date -> ISO string
- * - évite cycles
- * - réduit les objets "UserImpl" / user-like -> {uid,email,emailVerified}
- * - Map/Set/TypedArray -> tableaux
- */
-function sanitizeForFirestore(value){
+/* -------------------- FIRESTORE SANITIZE -------------------- */
+
+export function sanitizeForFirestore(value){
   const seen = new WeakSet();
 
-  const walk = (v) => {
-    if (v === null) return null;
+  const walk = (v)=>{
+    if(v === null || v === undefined) return null;
 
     const t = typeof v;
-    if (t === "string" || t === "number" || t === "boolean") return v;
 
-    if (t === "undefined" || t === "function" || t === "symbol" || t === "bigint") return null;
+    if(t === "string" || t === "number" || t === "boolean") return v;
 
-    if (v instanceof Date) return v.toISOString();
+    if(v instanceof Date) return v.toISOString();
 
-    // Firebase user-like (UserImpl)
-    if (v && typeof v === "object" && ("uid" in v) && ("email" in v || "emailVerified" in v)) {
-      return {
-        uid: v.uid ?? null,
-        email: v.email ?? null,
-        emailVerified: !!v.emailVerified
-      };
-    }
-
-    // Map / Set
-    if (v instanceof Map) return Array.from(v.entries()).map(([k,val]) => [walk(k), walk(val)]);
-    if (v instanceof Set) return Array.from(v.values()).map(walk);
-
-    // Typed arrays -> normal array
-    if (ArrayBuffer.isView(v) && !(v instanceof DataView)) return Array.from(v);
-
-    if (v && typeof v === "object") {
-      if (seen.has(v)) return null;
+    if(t === "object"){
+      if(seen.has(v)) return null;
       seen.add(v);
 
-      if (Array.isArray(v)) return v.map(walk);
+      if(Array.isArray(v)) return v.map(walk);
 
       const out = {};
       for (const [k, val] of Object.entries(v)) out[k] = walk(val);
@@ -194,41 +110,43 @@ function sanitizeForFirestore(value){
   return walk(value);
 }
 
-// ✅ export attendu: cloudSaveSnapshot
+/* -------------------- CLOUD SNAPSHOTS (Firestore) -------------------- */
+
+// ✅ ÉCRITURE: doc unique "latest" (au lieu de addDoc à l’infini)
 export async function cloudSaveSnapshot(data, label="Snapshot"){
   const u = requireUser();
   const safeData = sanitizeForFirestore(data);
 
-  const ref = await addDoc(snapshotsCol(u.uid), {
+  const ref = doc(db, "users", u.uid, "snapshots", "latest");
+  await setDoc(ref, {
+    id: "latest",
     label: String(label || "Snapshot"),
     data: safeData,
+    // createdAt ne doit pas bouger après la 1ère création : merge = true
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp()
-  });
+  }, { merge: true });
 
-  return ref.id;
+  return "latest";
 }
 
-export async function cloudListSnapshots(max=50){
+// ✅ LISTE: on ne lit que "latest" (1 read)
+export async function cloudListSnapshots(){
   const u = requireUser();
-  const q = query(
-    snapshotsCol(u.uid),
-    orderBy("updatedAt","desc"),
-    limit(Math.max(1, Math.min(200, max)))
-  );
-  const snap = await getDocs(q);
-  return snap.docs
-    .map(d => ({ id:d.id, ...(d.data()||{}) }))
-    .filter(x => !x.deleted)
-    .map(x => ({
-      id: x.id,
-      label: x.label || "Snapshot",
-      updatedAt: x.updatedAt || null,
-      createdAt: x.createdAt || null
-    }));
+  const ref = doc(db, "users", u.uid, "snapshots", "latest");
+  const snap = await getDoc(ref);
+  if(!snap.exists()) return [];
+
+  const x = snap.data() || {};
+  return [{
+    id: "latest",
+    label: x.label || "Snapshot",
+    updatedAt: x.updatedAt || null,
+    createdAt: x.createdAt || null
+  }];
 }
 
-export async function cloudLoadSnapshot(snapshotId){
+export async function cloudLoadSnapshot(snapshotId="latest"){
   const u = requireUser();
   const ref = doc(db, "users", u.uid, "snapshots", snapshotId);
   const snap = await getDoc(ref);
@@ -236,29 +154,28 @@ export async function cloudLoadSnapshot(snapshotId){
   return (snap.data()||{}).data;
 }
 
-export async function cloudDeleteSnapshot(snapshotId){
+// Option “supprimer” : marque deleted (garde la structure)
+export async function cloudDeleteSnapshot(snapshotId="latest"){
   const u = requireUser();
   const ref = doc(db, "users", u.uid, "snapshots", snapshotId);
   await updateDoc(ref, { deleted:true, updatedAt: serverTimestamp() });
 }
 
-/* -------------------- COMPAT EXPORTS (aliases) -------------------- */
+/* -------------------- COMPAT EXPORTS (pour éviter erreurs) -------------------- */
 
-// ✅ export attendu: requireAccessOrRedirect (en réalité dans gate.js)
 export async function requireAccessOrRedirect(...args){
   const mod = await import("./gate.js");
   return mod.requireAccessOrRedirect(...args);
 }
 
-// ✅ alias pratique : export local snapshot
 export function exportLocalSnapshot(filename="snapshot_local.json"){
   return downloadJson(filename, getAllLocalStorage());
 }
 
-// ✅ alias pratique : import local snapshot
 export function importLocalSnapshot(objOrJson, { clearFirst=false } = {}){
   return uploadJsonToLocalStorage(objOrJson, { clearFirst });
 }
+
 
 
 
