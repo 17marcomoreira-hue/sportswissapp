@@ -15,7 +15,7 @@ function setGateStatus(text) {
     document.getElementById("topStatus") ||
     document.getElementById("statusTop") ||
     document.getElementById("accessStatus") ||
-    document.getElementById("me"); // fallback fréquent chez toi
+    document.getElementById("me");
   if (el) el.textContent = text;
 }
 
@@ -32,8 +32,18 @@ function formatRemaining(access) {
   return `${mins} min restante${mins > 1 ? "s" : ""}`;
 }
 
+function enrichAccess(access) {
+  // ✅ Ajoute label + statusText pour app.html
+  const remaining = formatRemaining(access);
+  const label = access?.mode === "license" ? "Licence" : "Essai";
+  return {
+    ...access,
+    label,
+    statusText: `${label} — ${remaining}`
+  };
+}
+
 function setRemainingText(access) {
-  // Label spécifique "reste" (si ton UI en a un)
   const el =
     document.getElementById("remaining") ||
     document.getElementById("remainingDays") ||
@@ -48,7 +58,6 @@ function setRemainingText(access) {
 /* ---------------- Navigation helpers ---------------- */
 
 function currentPathForNext() {
-  // pathname + search => fonctionne pour /app, /app.html, etc.
   return window.location.pathname + window.location.search;
 }
 
@@ -76,34 +85,33 @@ export async function requireAccessOrRedirect() {
   // 3) S'assurer que le profil existe / est à jour
   const profile = await ensureUserProfile(user);
 
-  // 4) Enforce device unique (ne crashe pas si appelé trop tôt)
+  // 4) Enforce device unique
   await enforceSingleDevice(user);
 
   // 5) Calcul d’accès
-  const access = computeAccess(profile);
+  const baseAccess = computeAccess(profile);
+  const access = enrichAccess(baseAccess);
 
-  // Affichage restant (jours/min)
+  // Mets à jour éventuel label dédié
   setRemainingText(access);
 
   if (!access.allowed) {
     setGateStatus("Accès expiré (essai terminé).");
-
-    // Si tu as une page d’activation licence, on y va
-    // Sinon, renvoie vers login
-    // (adapte si ta page s'appelle autrement)
+    // adapte si ta page s'appelle autrement
     window.location.href = "activate.html";
     return { allowed: false, reason: "expired", access };
   }
 
-  // 6) Marquer validation en ligne pour autoriser l’offline grace
+  // 6) Marquer validation en ligne (offline grace)
   await markValidatedOnline(user, profile);
 
-  // 7) UI status final
-  const label = access.mode === "license" ? "Licence" : "Essai";
-  setGateStatus(`${label} — ${formatRemaining(access)}`);
+  // 7) UI status final (bandeau)
+  setGateStatus(access.statusText);
 
+  // ✅ IMPORTANT : on renvoie access enrichi (avec statusText/label)
   return { allowed: true, access, user, profile };
 }
+
 
 
 
