@@ -15,7 +15,6 @@ const {
 
 // ⚠️ Mets ici ton email admin
 const ADMIN_EMAIL = "17marcomoreira@gmail.com";
-
 const $ = (id)=>document.getElementById(id);
 
 const toDate = (v)=>{
@@ -54,21 +53,12 @@ function addMonthsMillis(baseMillis, months){
 }
 
 // ---------- UI ----------
-function setMe(text){
-  const el = $("me");
-  if(el) el.textContent = text;
-}
-
 function showGlobalError(e){
   const el = $("globalError");
-  const msg = e?.message || String(e||"Erreur");
-  console.error(e);
-  if(!el){
-    alert(msg);
-    return;
-  }
-  el.textContent = msg;
+  if(!el) return;
+  el.textContent = e?.message || String(e||"Erreur");
   el.style.display = "block";
+  console.error(e);
 }
 function clearGlobalError(){
   const el = $("globalError");
@@ -79,31 +69,37 @@ function clearGlobalError(){
 
 // ---------- AUTH ----------
 async function requireAdmin(){
-  const auth = await waitForAuthReady();
-  const user = auth.currentUser;
+  const user = await waitForAuthReady();
+  if(!user) throw new Error("Non connecté.");
+  if(!isAdminEmail(user.email, ADMIN_EMAIL)) throw new Error("Accès admin refusé.");
 
-  if(!user){
-    setMe("Non connecté. Redirection…");
-    location.href = "index.html?next=admin.html";
-    throw new Error("Non connecté.");
-  }
-  if(!isAdminEmail(user.email, ADMIN_EMAIL)){
-    setMe("Accès refusé. Redirection…");
-    location.href = "index.html";
-    throw new Error("Accès admin refusé.");
-  }
+  // Affiche l’email admin
+  const me = $("me");
+  if(me) me.textContent = `Connecté : ${user.email}`;
+
   return user;
 }
 
+// --------------------
+// ✅ Cache session (réduit les lectures Firestore quand tu reviens sur /admin)
+// --------------------
+const CACHE_TTL_MS = 2 * 60 * 1000; // 2 minutes
+const cacheGet = (k)=>{
+  try{
+    const raw = sessionStorage.getItem(k);
+    if(!raw) return null;
+    const obj = JSON.parse(raw);
+    if(!obj || !obj.t) return null;
+    if(Date.now() - obj.t > CACHE_TTL_MS) return null;
+    return obj.v ?? null;
+  }catch{ return null; }
+};
+const cacheSet = (k, v)=>{
+  try{ sessionStorage.setItem(k, JSON.stringify({ t:Date.now(), v })); }catch{}
+};
+
 // ---------- USERS ----------
 let usersCache = [];
-
-function emailStatusTag(u){
-  // Priorité à la vraie vérification Auth (champ emailVerified stocké)
-  if(u.emailVerified) return tag("Oui","ok");
-  if(u.emailVerifiedOverride) return tag("Override","warn");
-  return tag("Non","bad");
-}
 
 function renderUsers(rows){
   const tbody = $("usersTbody");
@@ -112,12 +108,12 @@ function renderUsers(rows){
   tbody.innerHTML = rows.map(u=>{
     const lic = u.license || {};
     const licActive = !!(lic.active && lic.expiresAt && lic.expiresAt > now());
-
     const trialTotal = Number(u.trialSeconds || 0);
     const trialStart = Number(u.trialStartedAt || 0);
     const elapsed = trialStart ? Math.floor((now()-trialStart)/1000) : 0;
     const remain = trialTotal ? Math.max(0, trialTotal - elapsed) : 0;
 
+    const emailVerified = u.emailVerified ? tag("Oui","ok") : tag("Non","warn");
     const trialTag = remain>0 ? tag(`${Math.ceil(remain/60)} min`, "ok") : tag("Terminé","bad");
 
     const licTag = licActive
@@ -131,22 +127,14 @@ function renderUsers(rows){
         <td>${u.email || "—"}</td>
         <td>${fmt(u.createdAt)}</td>
         <td>${fmt(u.lastLoginAt)}</td>
-        <td>${emailStatusTag(u)}</td>
+        <td>${emailVerified}</td>
         <td>${trialTag}</td>
         <td>${licTag}</td>
         <td>${device}</td>
         <td class="actions">
           <button class="btn small" data-act="reset" data-email="${u.email||""}">Reset mdp</button>
           <button class="btn small" data-act="resend" data-uid="${u._id}">Renvoyer vérif.</button>
-          <button class="btnWarn small" data-act="forceVerify" data-uid="${u._id}" data-email="${u.email||""}">
-            Valider email
-          </button>
-          <button class="btnDanger small" data-act="revokeLicense" data-uid="${u._id}" data-email="${u.email||""}">
-            Révoquer licence
-          </button>
-          <button class="btnDanger small" data-act="deleteUser" data-uid="${u._id}" data-email="${u.email||""}">
-            Supprimer données
-          </button>
+          <button class="btnDanger small" data-act="delete" data-uid="${u._id}">Supprimer</button>
         </td>
       </tr>
     `;
@@ -166,69 +154,28 @@ function renderUsers(rows){
           alert("Email de reset envoyé.");
         }
 
-        else if(act==="resend"){
+        if(act==="resend"){
           const uid = btn.dataset.uid;
           if(!uid) throw new Error("UID manquant.");
           await updateDoc(doc(db,"users",uid), { adminResendVerify:true });
           alert("Ok. Le renvoi sera fait au prochain login.");
         }
 
-        else if(act==="forceVerify"){
+        if(act==="delete"){
           const uid = btn.dataset.uid;
-          const email = btn.dataset.email || "";
           if(!uid) throw new Error("UID manquant.");
+          if(!confirm("Supprimer cet utilisateur + ses snapshots ?")) return;
 
-          const ok = confirm(
-            `Valider manuellement l'email pour ${email || uid} ?\n\n` +
-            `⚠️ Cela ne modifie pas Firebase Auth.\n` +
-            `C'est un override dans Firestore pour débloquer l'accès à l'app.`
-          );
-          if(!ok) return;
+          // Supprime snapshots (batch) + doc user
+          const snaps = await getDocs(query(collection(db,"users",uid,"snapshots"), limit(200)));
+          const batch = writeBatch(db);
+          snaps.docs.forEach(d=>batch.delete(d.ref));
+          batch.delete(doc(db,"users",uid));
+          await batch.commit();
 
-          await updateDoc(doc(db,"users",uid), {
-            emailVerifiedOverride: true,
-            emailVerifiedOverrideAt: serverTimestamp(),
-            emailVerifiedOverrideBy: ADMIN_EMAIL
-          });
-
-          alert("Override email appliqué.");
-          await fetchUsers();
-        }
-
-        else if(act==="revokeLicense"){
-          const uid = btn.dataset.uid;
-          const email = btn.dataset.email || "";
-          if(!uid) throw new Error("UID manquant.");
-
-          const ok = confirm(
-            `Révoquer la licence pour ${email || uid} ?\n\n` +
-            `Cela désactive l'accès licence dans users/{uid}.\n` +
-            `Si une clé était associée, elle sera aussi révoquée.`
-          );
-          if(!ok) return;
-
-          await revokeUserLicense(uid);
-          alert("Licence révoquée.");
-          await fetchUsers();
-          await fetchKeys();
-        }
-
-        else if(act==="deleteUser"){
-          const uid = btn.dataset.uid;
-          const email = btn.dataset.email || "";
-          if(!uid) throw new Error("UID manquant.");
-
-          const ok = confirm(
-            `Supprimer les données Firestore pour ${email || uid} ?\n\n` +
-            `✅ Supprime users/{uid} et users/{uid}/snapshots/*\n` +
-            `⚠️ Ne supprime PAS le compte Firebase Auth (email/mot de passe).\n` +
-            `S'il se reconnecte, son profil sera recréé.`
-          );
-          if(!ok) return;
-
-          await deleteUserFirestoreData(uid);
-          alert("Données Firestore supprimées.");
-          await fetchUsers();
+          // Force refresh
+          await fetchUsers({ force:true });
+          alert("Utilisateur supprimé.");
         }
 
       }catch(e){
@@ -240,9 +187,20 @@ function renderUsers(rows){
   });
 }
 
-async function fetchUsers(){
-  const snap = await getDocs(query(collection(db,"users"), orderBy("createdAt","desc"), limit(500)));
+async function fetchUsers({ force=false } = {}){
+  if(!force){
+    const cached = cacheGet("ADMIN_USERS_CACHE");
+    if(cached){
+      usersCache = cached;
+      renderUsers(usersCache);
+      return;
+    }
+  }
+
+  // ✅ Limite plus basse => beaucoup moins de reads
+  const snap = await getDocs(query(collection(db,"users"), orderBy("createdAt","desc"), limit(200)));
   usersCache = snap.docs.map(d => ({ _id:d.id, ...d.data() }));
+  cacheSet("ADMIN_USERS_CACHE", usersCache);
   renderUsers(usersCache);
 }
 
@@ -254,113 +212,23 @@ function applyUserFilter(){
 }
 
 function exportUsersCsv(){
-  const rows = [[
-    "email","createdAt","lastLoginAt","emailVerified",
-    "emailVerifiedOverride","emailVerifiedOverrideAt","emailVerifiedOverrideBy",
-    "trialStartedAt","trialSeconds",
-    "license.active","license.key","license.expiresAt","activeDeviceId"
-  ]];
-
+  const rows = [
+    ["email","createdAt","lastLoginAt","emailVerified","trialStartedAt","trialSeconds","license.active","license.expiresAt","activeDeviceId"]
+  ];
   usersCache.forEach(u=>{
     rows.push([
       u.email||"",
       fmt(u.createdAt),
       fmt(u.lastLoginAt),
       u.emailVerified ? "true" : "false",
-      u.emailVerifiedOverride ? "true" : "false",
-      fmt(u.emailVerifiedOverrideAt),
-      u.emailVerifiedOverrideBy || "",
       u.trialStartedAt ?? "",
       u.trialSeconds ?? "",
       u.license?.active ? "true":"false",
-      u.license?.key ?? "",
       u.license?.expiresAt ?? "",
       u.activeDeviceId ?? ""
     ]);
   });
-
   downloadCsv("users.csv", rows);
-}
-
-// ---------- LICENSE ADMIN ACTIONS ----------
-async function revokeUserLicense(uid){
-  const userRef = doc(db, "users", uid);
-  const snap = await getDoc(userRef);
-  if(!snap.exists()) throw new Error("Utilisateur introuvable.");
-
-  const data = snap.data();
-  const key = data?.license?.key || null;
-
-  // Désactive licence côté user
-  await updateDoc(userRef, {
-    license: { active:false, key:null, expiresAt: null, status:"revoked" },
-    lastValidatedAt: now(),
-  });
-
-  // Si une vraie clé était utilisée, on la révoque aussi (docId = clé)
-  if(key && key !== "MANUAL"){
-    try{
-      const keyRef = doc(db, "licenseKeys", key);
-      const keySnap = await getDoc(keyRef);
-      if(keySnap.exists()){
-        await updateDoc(keyRef, { revoked:true });
-      }
-    }catch(e){
-      console.warn("Unable to revoke key doc", e);
-    }
-  }
-}
-
-async function deleteUserFirestoreData(uid){
-  // Supprime snapshots + doc user dans une approche "batch par paquets"
-  // (Firestore batch <= 500 ops)
-  const userRef = doc(db, "users", uid);
-
-  // 1) Supprimer snapshots
-  const snapsCol = collection(db, "users", uid, "snapshots");
-  const snapsSnap = await getDocs(query(snapsCol, limit(500)));
-
-  if(!snapsSnap.empty){
-    let batch = writeBatch(db);
-    let ops = 0;
-
-    for(const d of snapsSnap.docs){
-      batch.delete(d.ref);
-      ops++;
-      if(ops >= 450){
-        await batch.commit();
-        batch = writeBatch(db);
-        ops = 0;
-      }
-    }
-
-    if(ops > 0){
-      await batch.commit();
-    }
-
-    // Si tu as potentiellement >500 snapshots, on boucle
-    // (rare en pratique)
-    while(true){
-      const more = await getDocs(query(snapsCol, limit(500)));
-      if(more.empty) break;
-
-      let b = writeBatch(db);
-      let o = 0;
-      for(const d of more.docs){
-        b.delete(d.ref);
-        o++;
-        if(o >= 450){
-          await b.commit();
-          b = writeBatch(db);
-          o = 0;
-        }
-      }
-      if(o > 0) await b.commit();
-    }
-  }
-
-  // 2) Supprime le doc user
-  await deleteDoc(userRef);
 }
 
 // ---------- KEYS ----------
@@ -387,7 +255,7 @@ function renderKeys(rows){
         <td>${linked}</td>
         <td>${fmt(k.createdAt)}</td>
         <td class="actions">
-          <button class="btnDanger small" data-act="revokeKey" data-id="${k._id}">Révoquer</button>
+          <button class="btn small" data-act="revokeKey" data-id="${k._id}">Révoquer</button>
         </td>
       </tr>
     `;
@@ -395,13 +263,16 @@ function renderKeys(rows){
 
   tbody.querySelectorAll("button").forEach(btn=>{
     btn.addEventListener("click", async ()=>{
+      const act = btn.dataset.act;
       const id  = btn.dataset.id;
       try{
         clearGlobalError();
         btn.disabled = true;
-        if(!id) throw new Error("ID manquant.");
-        await updateDoc(doc(db,"licenseKeys", id), { revoked:true });
-        await fetchKeys();
+        if(act==="revokeKey"){
+          if(!id) throw new Error("ID manquant.");
+          await updateDoc(doc(db,"licenseKeys", id), { revoked:true });
+          await fetchKeys({ force:true });
+        }
       }catch(e){
         showGlobalError(e);
       }finally{
@@ -411,9 +282,20 @@ function renderKeys(rows){
   });
 }
 
-async function fetchKeys(){
-  const snap = await getDocs(query(collection(db,"licenseKeys"), orderBy("createdAt","desc"), limit(1000)));
+async function fetchKeys({ force=false } = {}){
+  if(!force){
+    const cached = cacheGet("ADMIN_KEYS_CACHE");
+    if(cached){
+      keysCache = cached;
+      applyKeyFilter();
+      return;
+    }
+  }
+
+  // ✅ Limite plus basse => beaucoup moins de reads
+  const snap = await getDocs(query(collection(db,"licenseKeys"), orderBy("createdAt","desc"), limit(300)));
   keysCache = snap.docs.map(d => ({ _id:d.id, ...d.data() }));
+  cacheSet("ADMIN_KEYS_CACHE", keysCache);
   applyKeyFilter();
 }
 
@@ -426,7 +308,6 @@ function applyKeyFilter(){
   if(filter==="available") rows = rows.filter(k => !k.revoked && !k.usedBy);
   if(filter==="used")      rows = rows.filter(k => !k.revoked && !!k.usedBy);
   if(filter==="revoked")   rows = rows.filter(k => !!k.revoked);
-  if(filter==="expired")   rows = rows.filter(k => !k.revoked && !!k.expiresAt && Number(k.expiresAt) < now());
 
   if(q){
     rows = rows.filter(k =>
@@ -456,7 +337,7 @@ function exportKeysCsv(){
   downloadCsv("licenseKeys.csv", rows);
 }
 
-// ---------- KEY GENERATION (docId = clé) ----------
+// Génération de clés (docId = key)
 const CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const part = (len)=>Array.from({length:len},()=>CHARS[Math.floor(Math.random()*CHARS.length)]).join("");
 const makeKey = ()=>`${part(4)}-${part(4)}-${part(4)}`;
@@ -478,9 +359,12 @@ async function generateKeys(count, months){
       expiresAt: null
     });
   }
+
+  // invalide cache
+  cacheSet("ADMIN_KEYS_CACHE", null);
 }
 
-// ---------- MANUAL LICENSE (sans clé) ----------
+// ---------- MANUAL LICENSE ----------
 async function grantManual(email, months){
   const e = String(email||"").trim().toLowerCase();
   if(!e) throw new Error("Email requis.");
@@ -488,7 +372,9 @@ async function grantManual(email, months){
   const snap = await getDocs(query(collection(db,"users"), where("email","==", e), limit(1)));
   if(snap.empty) throw new Error("Utilisateur introuvable (il doit s'être connecté au moins une fois).");
 
-  const uid = snap.docs[0].id;
+  const d = snap.docs[0];
+  const uid = d.id;
+
   const m = Number(months||12);
   const expiresAt = addMonthsMillis(now(), m);
 
@@ -497,39 +383,61 @@ async function grantManual(email, months){
     licenseActivatedAt: serverTimestamp(),
     lastValidatedAt: now()
   });
+
+  // invalide cache
+  cacheSet("ADMIN_USERS_CACHE", null);
+}
+
+// ---------- Revoke license ----------
+async function revokeLicense(email){
+  const e = String(email||"").trim().toLowerCase();
+  if(!e) throw new Error("Email requis.");
+
+  const snap = await getDocs(query(collection(db,"users"), where("email","==", e), limit(1)));
+  if(snap.empty) throw new Error("Utilisateur introuvable.");
+
+  const d = snap.docs[0];
+  const uid = d.id;
+
+  await updateDoc(doc(db,"users", uid), {
+    license: { active:false, key:null, expiresAt:null, status:"revoked" },
+    lastValidatedAt: now()
+  });
+
+  cacheSet("ADMIN_USERS_CACHE", null);
 }
 
 // ---------- INIT ----------
 (async function(){
   try{
     clearGlobalError();
-    setMe("Chargement…");
-    const user = await requireAdmin();
-    setMe(`Connecté en admin : ${user.email}`);
+    await requireAdmin();
 
     $("btnLogout")?.addEventListener("click", async ()=>{
       try{ await logout(); location.href="index.html"; }
       catch(e){ showGlobalError(e); }
     });
 
-    // Users
     $("btnRefreshUsers")?.addEventListener("click", async ()=>{
-      try{ clearGlobalError(); await fetchUsers(); }
+      try{ clearGlobalError(); await fetchUsers({ force:true }); }
       catch(e){ showGlobalError(e); }
     });
+
     $("btnExportUsersCsv")?.addEventListener("click", ()=>{
       try{ exportUsersCsv(); }catch(e){ showGlobalError(e); }
     });
+
     $("userSearch")?.addEventListener("input", applyUserFilter);
 
-    // Keys
     $("btnRefreshKeys")?.addEventListener("click", async ()=>{
-      try{ clearGlobalError(); await fetchKeys(); }
+      try{ clearGlobalError(); await fetchKeys({ force:true }); }
       catch(e){ showGlobalError(e); }
     });
+
     $("btnExportKeysCsv")?.addEventListener("click", ()=>{
       try{ exportKeysCsv(); }catch(e){ showGlobalError(e); }
     });
+
     $("keyFilter")?.addEventListener("change", applyKeyFilter);
     $("keySearch")?.addEventListener("input", applyKeyFilter);
 
@@ -540,8 +448,7 @@ async function grantManual(email, months){
         clearGlobalError();
         $("btnGenKeys").disabled = true;
         await generateKeys(count, months);
-        await fetchKeys();
-        alert(`${count} clés générées (${months} mois).`);
+        await fetchKeys({ force:true });
       }catch(e){
         showGlobalError(e);
       }finally{
@@ -549,7 +456,6 @@ async function grantManual(email, months){
       }
     });
 
-    // Manual license buttons (IDs from your admin.html)
     $("btnGrant12")?.addEventListener("click", async ()=>{
       try{
         clearGlobalError();
@@ -557,7 +463,7 @@ async function grantManual(email, months){
         $("btnGrant12").disabled = true;
         await grantManual(email, 12);
         alert("Licence activée 12 mois.");
-        await fetchUsers();
+        await fetchUsers({ force:true });
       }catch(e){
         showGlobalError(e);
       }finally{
@@ -572,7 +478,7 @@ async function grantManual(email, months){
         $("btnExtend12").disabled = true;
         await grantManual(email, 12);
         alert("Licence prolongée 12 mois.");
-        await fetchUsers();
+        await fetchUsers({ force:true });
       }catch(e){
         showGlobalError(e);
       }finally{
@@ -583,18 +489,11 @@ async function grantManual(email, months){
     $("btnRevoke")?.addEventListener("click", async ()=>{
       try{
         clearGlobalError();
-        const email = String($("manualEmail")?.value || "").trim().toLowerCase();
-        if(!email) throw new Error("Entre un email utilisateur.");
-        const snap = await getDocs(query(collection(db,"users"), where("email","==", email), limit(1)));
-        if(snap.empty) throw new Error("Utilisateur introuvable.");
-        const uid = snap.docs[0].id;
-
-        if(!confirm(`Révoquer la licence pour ${email} ?`)) return;
+        const email = $("manualEmail")?.value || "";
         $("btnRevoke").disabled = true;
-        await revokeUserLicense(uid);
+        await revokeLicense(email);
         alert("Licence révoquée.");
-        await fetchUsers();
-        await fetchKeys();
+        await fetchUsers({ force:true });
       }catch(e){
         showGlobalError(e);
       }finally{
@@ -602,7 +501,7 @@ async function grantManual(email, months){
       }
     });
 
-    // Initial load
+    // Chargement initial : utilise cache si dispo (0 read si tu reviens vite)
     await fetchUsers();
     await fetchKeys();
 
@@ -610,6 +509,7 @@ async function grantManual(email, months){
     showGlobalError(e);
   }
 })();
+
 
 
 
