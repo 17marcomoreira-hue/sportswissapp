@@ -1,4 +1,4 @@
-import { waitForAuthReady } from "./auth.js";
+import { waitForAuthReady, reloadCurrentUser } from "./auth.js";
 import {
   ensureUserProfile,
   computeAccess,
@@ -9,7 +9,6 @@ import {
 /* ---------------- UI helpers ---------------- */
 
 function setGateStatus(text) {
-  // Bandeau principal (supporte plusieurs ids possibles)
   const el =
     document.getElementById("gateStatus") ||
     document.getElementById("topStatus") ||
@@ -27,20 +26,14 @@ function formatRemaining(access) {
     return `${days} jour${days > 1 ? "s" : ""} restant${days > 1 ? "s" : ""}`;
   }
 
-  // trial
   const mins = Math.max(0, Math.ceil(sec / 60));
   return `${mins} min restante${mins > 1 ? "s" : ""}`;
 }
 
 function enrichAccess(access) {
-  // ✅ Ajoute label + statusText pour app.html
   const remaining = formatRemaining(access);
   const label = access?.mode === "license" ? "Licence" : "Essai";
-  return {
-    ...access,
-    label,
-    statusText: `${label} — ${remaining}`
-  };
+  return { ...access, label, statusText: `${label} — ${remaining}` };
 }
 
 function setRemainingText(access) {
@@ -50,9 +43,7 @@ function setRemainingText(access) {
     document.getElementById("daysLeft") ||
     document.getElementById("accessRemaining") ||
     document.getElementById("daysRemaining");
-  if (!el) return;
-
-  el.textContent = formatRemaining(access);
+  if (el) el.textContent = formatRemaining(access);
 }
 
 /* ---------------- Navigation helpers ---------------- */
@@ -71,46 +62,46 @@ function redirectToLogin() {
 export async function requireAccessOrRedirect() {
   setGateStatus("Vérification accès…");
 
-  // 1) Attendre que Firebase Auth soit prêt
   const auth = await waitForAuthReady();
-  const user = auth.currentUser;
+  const user0 = auth.currentUser;
 
-  // 2) Si pas connecté => redirection login
-  if (!user) {
+  if (!user0) {
     setGateStatus("Connexion requise…");
     redirectToLogin();
     return { allowed: false, reason: "not_signed_in" };
   }
 
-  // 3) S'assurer que le profil existe / est à jour
+  // ✅ IMPORTANT : forcer la synchro de emailVerified ici aussi (pas seulement au login)
+  const user = (await reloadCurrentUser()) || user0;
+
+  // Crée/MAJ profil avec emailVerified frais
   const profile = await ensureUserProfile(user);
 
-  // 4) Enforce device unique
+  // (Optionnel mais conseillé) : si tu utilises l’override dépannage
+  const okEmail = !!user.emailVerified || !!profile.emailVerifiedOverride;
+  if (!okEmail) {
+    window.location.href = "./verify.html";
+    return { allowed: false, reason: "email_not_verified" };
+  }
+
   await enforceSingleDevice(user);
 
-  // 5) Calcul d’accès
   const baseAccess = computeAccess(profile);
   const access = enrichAccess(baseAccess);
-
-  // Mets à jour éventuel label dédié
   setRemainingText(access);
 
   if (!access.allowed) {
     setGateStatus("Accès expiré (essai terminé).");
-    // adapte si ta page s'appelle autrement
     window.location.href = "activate.html";
     return { allowed: false, reason: "expired", access };
   }
 
-  // 6) Marquer validation en ligne (offline grace)
   await markValidatedOnline(user, profile);
-
-  // 7) UI status final (bandeau)
   setGateStatus(access.statusText);
 
-  // ✅ IMPORTANT : on renvoie access enrichi (avec statusText/label)
   return { allowed: true, access, user, profile };
 }
+
 
 
 
