@@ -3,97 +3,68 @@ import {
   ensureUserProfile,
   computeAccess,
   enforceSingleDevice,
-  getOfflineDecision,
   markValidatedOnline
 } from "./license.js";
 
-// ---------- helpers affichage ----------
-function formatLicenseRemaining(access){
-  const sec = Number(access?.remainingSec);
-  if(!Number.isFinite(sec) || sec <= 0){
-    return { remainingDays: 0, statusText: "Licence expirée" };
-  }
-
-  const days = Math.ceil(sec / 86400);
-
-  // Affichage plus fin si < 2 jours
-  if(days <= 1){
-    const hours = Math.ceil(sec / 3600);
-    if(hours <= 1){
-      const mins = Math.max(1, Math.ceil(sec / 60));
-      return { remainingDays: 1, statusText: `Licence : ~${mins} min restantes` };
-    }
-    return { remainingDays: 1, statusText: `Licence : ~${hours} h restantes` };
-  }
-
-  return {
-    remainingDays: days,
-    statusText: `Licence : ${days} jour${days > 1 ? "s" : ""} restants`
-  };
+// Bandeau en haut (si présent)
+function setGateStatus(text) {
+  const el =
+    document.getElementById("gateStatus") ||
+    document.getElementById("topStatus") ||
+    document.getElementById("statusTop") ||
+    document.getElementById("accessStatus");
+  if (el) el.textContent = text;
 }
 
-function formatTrialRemaining(access){
-  const sec = Math.max(0, Number(access?.remainingSec || 0));
-  const mins = Math.ceil(sec / 60);
-  if(mins <= 1) return { remainingDays: null, statusText: `Essai : ~${Math.max(1, sec)} s restantes` };
-  return { remainingDays: null, statusText: `Essai : ${mins} min restantes` };
+// URL actuelle (pour revenir après login)
+function currentPathForNext() {
+  // Sur ton site, ça peut être "/app" (route) ou "app.html"
+  // On prend pathname + search pour être sûr
+  return window.location.pathname + window.location.search;
 }
 
-function enrichAccess(access){
-  if(!access) return access;
-
-  if(access.mode === "license"){
-    const x = formatLicenseRemaining(access);
-    return { ...access, ...x };
-  }
-
-  if(access.mode === "trial"){
-    const x = formatTrialRemaining(access);
-    return { ...access, ...x };
-  }
-
-  if(access.mode === "license-offline"){
-    return { ...access, remainingDays: null, statusText: "Licence : OK (hors ligne)" };
-  }
-
-  return { ...access, remainingDays: null, statusText: "Accès OK" };
+function redirectToLogin() {
+  const next = encodeURIComponent(currentPathForNext());
+  window.location.href = `index.html?next=${next}`;
 }
 
-// ---------- main ----------
-export async function requireAccessOrRedirect(){
-  const user = await waitForAuthReady();
-  if(!user){
-    location.href = "./login.html";
-    return null;
+export async function requireAccessOrRedirect() {
+  setGateStatus("Vérification accès…");
+
+  // 1) Attendre que Firebase Auth soit prêt
+  const auth = await waitForAuthReady();
+  const user = auth.currentUser;
+
+  // 2) Si pas connecté => login
+  if (!user) {
+    setGateStatus("Connexion requise…");
+    redirectToLogin();
+    return { allowed: false, reason: "not_signed_in" };
   }
 
-  // OFFLINE: autorisé seulement si licence validée récemment (grace)
-  if(!navigator.onLine){
-    const off = getOfflineDecision();
-    if(!off.allowed){
-      alert("Connexion internet requise.\n\nRaison: " + off.reason);
-      location.href = "./login.html";
-      return null;
-    }
-    const access = enrichAccess({ allowed:true, mode:"license-offline", remainingSec:null });
-    return { user, profile:null, access, offline:true };
-  }
-
-  // ONLINE: contrôle normal
-  await enforceSingleDevice(user);
+  // 3) S'assurer que le profil existe (création si 1ère connexion)
   const profile = await ensureUserProfile(user);
-  const access = enrichAccess(computeAccess(profile));
 
-  // Marque une validation récente (utile pour l'offline grace)
-  if(access.mode === "license"){
-    await markValidatedOnline(user, profile);
+  // 4) Vérifier / appliquer device unique (ne bloque pas si profil absent)
+  await enforceSingleDevice(user);
+
+  // 5) Calcul d’accès
+  const access = computeAccess(profile);
+
+  if (!access.allowed) {
+    // Ici, tu peux rediriger vers une page "pricing" / "activate"
+    // Je mets activate.html si tu l’as, sinon login.
+    setGateStatus("Accès expiré (essai terminé).");
+    const hasActivate = true; // si tu as activate.html
+    window.location.href = hasActivate ? "activate.html" : "index.html";
+    return { allowed: false, reason: "expired", access };
   }
 
-  if(!access.allowed){
-    location.href = "./activate.html";
-    return null;
-  }
+  // 6) Marquer validation en ligne (pour offline grace)
+  await markValidatedOnline(user, profile);
 
-  return { user, profile, access, offline:false };
+  setGateStatus(access.mode === "license" ? "Accès licence ✔" : "Accès essai ✔");
+  return { allowed: true, access, user, profile };
 }
+
 
