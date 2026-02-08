@@ -6,20 +6,49 @@ import {
   markValidatedOnline
 } from "./license.js";
 
-// Bandeau en haut (si présent)
+/* ---------------- UI helpers ---------------- */
+
 function setGateStatus(text) {
+  // Bandeau principal (supporte plusieurs ids possibles)
   const el =
     document.getElementById("gateStatus") ||
     document.getElementById("topStatus") ||
     document.getElementById("statusTop") ||
-    document.getElementById("accessStatus");
+    document.getElementById("accessStatus") ||
+    document.getElementById("me"); // fallback fréquent chez toi
   if (el) el.textContent = text;
 }
 
-// URL actuelle (pour revenir après login)
+function formatRemaining(access) {
+  const sec = Number(access?.remainingSec || 0);
+
+  if (access?.mode === "license") {
+    const days = Math.max(0, Math.ceil(sec / 86400));
+    return `${days} jour${days > 1 ? "s" : ""} restant${days > 1 ? "s" : ""}`;
+  }
+
+  // trial
+  const mins = Math.max(0, Math.ceil(sec / 60));
+  return `${mins} min restante${mins > 1 ? "s" : ""}`;
+}
+
+function setRemainingText(access) {
+  // Label spécifique "reste" (si ton UI en a un)
+  const el =
+    document.getElementById("remaining") ||
+    document.getElementById("remainingDays") ||
+    document.getElementById("daysLeft") ||
+    document.getElementById("accessRemaining") ||
+    document.getElementById("daysRemaining");
+  if (!el) return;
+
+  el.textContent = formatRemaining(access);
+}
+
+/* ---------------- Navigation helpers ---------------- */
+
 function currentPathForNext() {
-  // Sur ton site, ça peut être "/app" (route) ou "app.html"
-  // On prend pathname + search pour être sûr
+  // pathname + search => fonctionne pour /app, /app.html, etc.
   return window.location.pathname + window.location.search;
 }
 
@@ -28,6 +57,8 @@ function redirectToLogin() {
   window.location.href = `index.html?next=${next}`;
 }
 
+/* ---------------- Main gate ---------------- */
+
 export async function requireAccessOrRedirect() {
   setGateStatus("Vérification accès…");
 
@@ -35,36 +66,44 @@ export async function requireAccessOrRedirect() {
   const auth = await waitForAuthReady();
   const user = auth.currentUser;
 
-  // 2) Si pas connecté => login
+  // 2) Si pas connecté => redirection login
   if (!user) {
     setGateStatus("Connexion requise…");
     redirectToLogin();
     return { allowed: false, reason: "not_signed_in" };
   }
 
-  // 3) S'assurer que le profil existe (création si 1ère connexion)
+  // 3) S'assurer que le profil existe / est à jour
   const profile = await ensureUserProfile(user);
 
-  // 4) Vérifier / appliquer device unique (ne bloque pas si profil absent)
+  // 4) Enforce device unique (ne crashe pas si appelé trop tôt)
   await enforceSingleDevice(user);
 
   // 5) Calcul d’accès
   const access = computeAccess(profile);
 
+  // Affichage restant (jours/min)
+  setRemainingText(access);
+
   if (!access.allowed) {
-    // Ici, tu peux rediriger vers une page "pricing" / "activate"
-    // Je mets activate.html si tu l’as, sinon login.
     setGateStatus("Accès expiré (essai terminé).");
-    const hasActivate = true; // si tu as activate.html
-    window.location.href = hasActivate ? "activate.html" : "index.html";
+
+    // Si tu as une page d’activation licence, on y va
+    // Sinon, renvoie vers login
+    // (adapte si ta page s'appelle autrement)
+    window.location.href = "activate.html";
     return { allowed: false, reason: "expired", access };
   }
 
-  // 6) Marquer validation en ligne (pour offline grace)
+  // 6) Marquer validation en ligne pour autoriser l’offline grace
   await markValidatedOnline(user, profile);
 
-  setGateStatus(access.mode === "license" ? "Accès licence ✔" : "Accès essai ✔");
+  // 7) UI status final
+  const label = access.mode === "license" ? "Licence" : "Essai";
+  setGateStatus(`${label} — ${formatRemaining(access)}`);
+
   return { allowed: true, access, user, profile };
 }
+
 
 
